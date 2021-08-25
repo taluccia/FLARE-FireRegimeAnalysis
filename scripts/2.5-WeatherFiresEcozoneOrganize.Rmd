@@ -762,7 +762,7 @@ climate1
 
 ```{r}
 
-write.csv(climate1, '../outputs/4.3-ClimateFire/ClimateFire2001-2020.csv',  row.names = FALSE)
+write.csv(climate1, '../outputs/ClimateFire/ClimateFire2001-2020.csv',  row.names = FALSE)
 
 ```
 
