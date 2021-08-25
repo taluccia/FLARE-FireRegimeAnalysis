@@ -1,0 +1,270 @@
+---
+title: "Snow-off"
+author: "Anna Talucci"
+date: "6/8/2021"
+output: html_document
+---
+
+# Clear workspace
+
+```{r}
+rm(list=ls()) 
+```
+
+# Overview
+
+
+# Packages
+
+
+```{r include=FALSE}
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(cowplot)
+
+```
+
+# Define graph Theme and color Palette 
+
+##Themes
+```{r}
+lb_theme = theme_bw() + theme(legend.position = "bottom") +  
+  theme(panel.grid.major = element_blank()) +
+    theme(axis.title.y = element_text(size = 11, hjust = 0.5, vjust = 1.1),
+        axis.text.x = element_text(size = 10, color = "black"),
+        axis.text.y = element_text(size = 10, color = "black"),
+        axis.line = element_line(colour = "black"))
+```
+
+```{r}
+comp_theme = theme_bw() + theme(legend.position = "none") +  
+  theme(panel.grid.major = element_blank()) +
+    theme(axis.title.y = element_text(size = 11, hjust = 0.5, vjust = 1.1),
+        axis.text.x = element_text(size = 10, color = "black"),
+        axis.text.y = element_text(size = 10, color = "black"),
+        axis.line = element_line(colour = "black"))
+```
+
+### No Legend
+```{r}
+bar_theme = theme_bw() + 
+  theme(legend.position = "none", legend.title = element_blank()) +
+  theme(panel.grid.major = element_blank()) +
+    theme(axis.title.y = element_text(size = 11, hjust = 0.5, vjust = 1.1),
+        axis.text.x = element_text(size = 10, color = "black"),
+        axis.text.y = element_text(size = 10, color = "black"),
+        axis.line = element_line(colour = "black")) +
+  theme(axis.text.x = element_text(angle=65, vjust=0.6)) 
+```
+
+```{r}
+bar2_theme = theme_bw() + 
+  theme(panel.grid.major = element_blank()) +
+    theme(axis.title.y = element_text(size = 11, hjust = 0.5, vjust = 1.1),
+        axis.text.x = element_text(size = 10, color = "black"),
+        axis.text.y = element_text(size = 10, color = "black"),
+        axis.line = element_line(colour = "black")) +
+  theme(axis.text.x = element_text(angle=65, vjust=0.6)) 
+```
+
+
+## Palettes
+```{r}
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+```
+
+```{r}
+ecoPalette <- c("#CB453D", "#44CB30", "#2E41C3", "#36A4B4", "#B83491", "#B09C32", "#AE3D5F", "#2DC086", "#3261A1")
+```
+
+
+
+# Data 
+
+```{r}
+data = read.csv("../data/2.5-AllFires/SiberiaFires_v2_2001-2020.csv") 
+```
+
+```{r}
+data
+```
+
+
+```{r}
+sn01 = read.csv("../data/SnowOff/2001_snow_off.csv") 
+sn02 = read.csv("../data/SnowOff/2002_snow_off.csv") 
+sn03 = read.csv("../data/SnowOff/2003_snow_off.csv") 
+sn04 = read.csv("../data/SnowOff/2004_snow_off.csv") 
+sn05 = read.csv("../data/SnowOff/2005_snow_off.csv") 
+```
+
+```{r}
+sn06 = read.csv("../data/SnowOff/2006_snow_off.csv") 
+sn07 = read.csv("../data/SnowOff/2007_snow_off.csv") 
+sn08 = read.csv("../data/SnowOff/2008_snow_off.csv") 
+sn09 = read.csv("../data/SnowOff/2009_snow_off.csv") 
+sn10 = read.csv("../data/SnowOff/2010_snow_off.csv") 
+```
+
+```{r}
+sn11 = read.csv("../data/SnowOff/2011_snow_off.csv") 
+sn12 = read.csv("../data/SnowOff/2012_snow_off.csv") 
+sn13 = read.csv("../data/SnowOff/2013_snow_off.csv") 
+sn14 = read.csv("../data/SnowOff/2014_snow_off.csv") 
+sn15 = read.csv("../data/SnowOff/2015_snow_off.csv") 
+```
+
+
+```{r}
+sn16 = read.csv("../data/SnowOff/2016_snow_off.csv") 
+sn17 = read.csv("../data/SnowOff/2017_snow_off.csv") 
+sn18 = read.csv("../data/SnowOff/2018_snow_off.csv") 
+sn19 = read.csv("../data/SnowOff/2019_snow_off.csv") 
+sn20 = read.csv("../data/SnowOff/2020_snow_off.csv") 
+```
+
+
+```{r}
+sn01
+```
+
+
+```{r}
+
+snow = bind_rows(sn01, sn02, sn03, sn04, sn05, sn06, sn07, sn08, sn09, sn10, sn11, sn12,  sn13, sn14, sn15, sn16, sn17, sn18, sn19, sn20)
+```
+
+```{r}
+data  = snow %>% 
+  dplyr::select(IDobj, FireId, FireYr, EcoCode, SIZEha,  calDoy, millis,  relDoy, year) %>% filter(EcoCode !="SSFS") %>%
+  mutate(LogRelDoy = log(relDoy)) %>%
+  mutate(Mha =  SIZEha/1000000)
+```
+
+
+
+```{r}
+
+data1 = data %>% group_by(EcoCode,  FireYr) %>%
+  summarise(snowMean = mean(relDoy),
+            Mha = (sum(SIZEha)/1000000))
+
+data1
+```
+
+```{r fig.height=7, fig.width=6}
+ggplot(data = data1, aes(x = snowMean, y = Mha, color = EcoCode)) + 
+  geom_smooth(method="lm", se=TRUE, alpha=0.1) +
+  geom_point(size = 1) +
+  scale_color_manual(values=cbbPalette) +
+  facet_wrap(~EcoCode, scales = "free", ncol=2 ) +
+  theme_bw() +
+  theme(strip.background = element_rect(color=NA, fill="white", size=1.5, linetype="solid")) 
+
+```
+
+# Data by Ecozone
+```{r}
+e01 = read.csv("../data/SnowOffEco/2001_SnowOffEco.csv") 
+e02 = read.csv("../data/SnowOffEco/2002_SnowOffEco.csv") 
+e03 = read.csv("../data/SnowOffEco/2003_SnowOffEco.csv") 
+e04 = read.csv("../data/SnowOffEco/2004_SnowOffEco.csv") 
+e05 = read.csv("../data/SnowOffEco/2005_SnowOffEco.csv") 
+```
+
+```{r}
+e06 = read.csv("../data/SnowOffEco/2006_SnowOffEco.csv") 
+e07 = read.csv("../data/SnowOffEco/2007_SnowOffEco.csv") 
+e08 = read.csv("../data/SnowOffEco/2008_SnowOffEco.csv") 
+e09 = read.csv("../data/SnowOffEco/2009_SnowOffEco.csv") 
+e10 = read.csv("../data/SnowOffEco/2010_SnowOffEco.csv") 
+```
+
+```{r}
+e11 = read.csv("../data/SnowOffEco/2011_SnowOffEco.csv") 
+e12 = read.csv("../data/SnowOffEco/2012_SnowOffEco.csv") 
+e13 = read.csv("../data/SnowOffEco/2013_SnowOffEco.csv") 
+e14 = read.csv("../data/SnowOffEco/2014_SnowOffEco.csv") 
+e15 = read.csv("../data/SnowOffEco/2015_SnowOffEco.csv") 
+```
+
+```{r}
+e16 = read.csv("../data/SnowOffEco/2016_SnowOffEco.csv") 
+e17 = read.csv("../data/SnowOffEco/2017_SnowOffEco.csv") 
+e18 = read.csv("../data/SnowOffEco/2018_SnowOffEco.csv") 
+e19 = read.csv("../data/SnowOffEco/2019_SnowOffEco.csv") 
+e20 = read.csv("../data/SnowOffEco/2020_SnowOffEco.csv") 
+```
+
+
+```{r}
+
+eco = bind_rows(e01, e02, e03, e04, e05, e06, e07, e08, e09, e10, e11, e12,  e13, e14, e15, e16, e17, e18, e19, e20)
+```
+
+```{r}
+eco
+```
+```{r}
+eco1 = eco %>% 
+  dplyr::select(ECO_NAME, OBJECTID, eco_code, calDoy, millis,  relDoy, year) %>% 
+  rename(EcoCode=eco_code, EcoName=ECO_NAME, EcoId = OBJECTID, FireYr=year) %>%
+  filter(EcoCode != "SSFS") %>%
+  group_by(EcoCode, FireYr) %>%
+  summarise(snowMeanEco = mean(relDoy)) %>%
+  drop_na(.)
+
+eco1
+```
+
+
+# Combine Fires and  Eco
+```{r}
+str(data1)
+str(eco1)
+```
+
+```{r}
+fill_zero = eco1 %>% 
+  left_join(data1) %>%
+  dplyr::mutate(Mha = replace_na(Mha, 0)) %>%
+  drop_na(.) %>%
+  dplyr::select(EcoCode, FireYr, snowMean, Mha)
+  
+
+
+fill_zero
+```
+
+
+
+
+```{r}
+fillNa = eco1 %>% 
+  left_join(data1) %>%
+  dplyr::mutate(Mha = replace_na(Mha, 0)) %>%
+  filter_all(any_vars(is.na(.))) %>%
+  mutate(snowMean = snowMeanEco) %>%
+  dplyr::select(EcoCode, FireYr, snowMean, Mha)
+
+
+fillNa
+```
+
+```{r}
+
+snowdata = bind_rows(fill_zero, fillNa) %>%
+  rename(MeanCalDoY=snowMean)
+
+snowdata
+```
+
+```{r}
+
+write.csv(snowdata, '../outputs/SnowData/SnowOff2001-2020.csv',  row.names = FALSE)
+
+```
+
+**THE END**
