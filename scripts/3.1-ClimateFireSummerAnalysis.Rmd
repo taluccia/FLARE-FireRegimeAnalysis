@@ -5,12 +5,7 @@ date: "6/20/2021"
 output: html_document
 ---
 
----
-title: "ClimateFireAnalysis"
-author: "Anna Talucci"
-date: "6/17/2021"
-output: html_document
----
+
 
 
 # Clear workspace
@@ -22,6 +17,10 @@ rm(list=ls())
 
 # Overview
 [Terra Climate](https://developers.google.com/earth-engine/datasets/catalog/IDAHO_EPSCOR_TERRACLIMATE#bands)
+
+Variables 
+DEF
+Precip
 
 # Library
 ```{r include=FALSE}
@@ -113,7 +112,7 @@ climate
 # Analysis  Summer Variables
 ## Model Climate Moisture Deficit
 ```{r}
-fit1 = lm(MHa ~ SummerDef + EcoCode + SummerDef:EcoCode, data = climate)
+fit1 = lm(sqrt(MHa) ~ SummerDef + EcoCode + SummerDef:EcoCode, data = climate)
 ```
 #### Residuals
 
@@ -185,7 +184,7 @@ slope1_TCST = coef(fit1)[2] + coef(fit1)[16]
 
 ```
 
-# Create Dataframe with summry output
+#### Create Dataframe with summry output
 ```{r}
 EcoCode = c("BT", "CKMT", "CPT", "EST", "NSCT", "NST", "TBBMT", "TCST")
 intercept = c(int1_BT, int1_CKMT, int1_CPT, int1_EST, int1_NSCT, int1_NST, int1_TBBMT, int1_TCST)
@@ -245,17 +244,34 @@ plot_fit1 = ggplot(data = climate, aes(x = SummerDef, y = MHa)) +
 plot_fit1
   
 ```
-
-
 ```{r eval=FALSE, include=FALSE}
 ggsave("../figures/Analysis/SummerDefAnalysis.png", plot = plot_fit1, width = 6, height = 7, units = c("in"), dpi=600 )
 ```
+
+```{r}
+g1 = ggplot(data = climate, aes(x = SummerDef, y = sqrt(MHa), color = EcoCode)) + 
+  geom_smooth(method="lm", se=TRUE, alpha=0.1) +
+  geom_point(size = 1) +
+  scale_color_manual(values=cbbPalette) +
+    labs(y=("Annual Area burned in millions of Ha\n(Squareroot transformation)"), x= "CWD", color = "EcoCode") +
+  theme_bw() + 
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(nrow = 1))
+
+g1
+```
+
+```{r eval=FALSE, include=FALSE}
+ggsave("../figures/Analysis/SummerDefAllEco.png", plot = g1, width = 6, height = 4, units = c("in"), dpi=600 )
+```
+
+
 
 
 ## Model Precipitation
 
 ```{r}
-fit2 = lm(MHa ~ SummerPr + EcoCode + SummerPr:EcoCode, data = climate)
+fit2 = lm(sqrt(MHa) ~ SummerPr + EcoCode + SummerPr:EcoCode, data = climate)
 ```
 #### Residuals
 
@@ -329,7 +345,7 @@ slope2_TCST = coef(fit2)[2] + coef(fit2)[16]
 
 ```
 
-# Create Dataframe with summry output
+### Create Dataframe with summry output
 ```{r}
 EcoCode = c("BT", "CKMT", "CPT", "EST", "NSCT", "NST", "TBBMT", "TCST")
 intercept = c(int2_BT, int2_CKMT, int2_CPT, int2_EST, int2_NSCT, int2_NST, int2_TBBMT, int2_TCST)
@@ -396,11 +412,23 @@ plot_fit2
 ggsave("../figures/Analysis/SummerPrAnalysis.png", plot = plot_fit2, width = 6, height = 7, units = c("in"), dpi=600 )
 ```
 
+```{r}
+g2 = ggplot(data = climate, aes(x = SummerPr, y = sqrt(MHa), color = EcoCode)) + 
+  geom_smooth(method="lm", se=TRUE, alpha=0.1) +
+  geom_point(size = 1) +
+  scale_color_manual(values=cbbPalette) +
+    labs(y=("Annual Area burned in millions of Ha\n(Squareroot transformation)"), x= "precipitation", color = "EcoCode") +
+  theme_bw() + 
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(nrow = 1))
+
+g2
+```
 ## Model Max Temperature
 
 
 ```{r}
-fit3 = lm(MHa ~ SummerTmmx + EcoCode + SummerTmmx:EcoCode, data = climate)
+fit3 = lm(sqrt(MHa) ~ SummerTmmx + EcoCode + SummerTmmx:EcoCode, data = climate)
 ```
 #### Residuals
 
@@ -474,7 +502,7 @@ slope3_TCST = coef(fit3)[2] + coef(fit3)[16]
 
 ```
 
-# Create Dataframe with summry output
+### Create Dataframe with summry output
 ```{r}
 unique(climate$EcoCode)
 ```
@@ -543,6 +571,18 @@ plot_fit3
 ggsave("../figures/Analysis/SummerTmmxAnalysis.png", plot = plot_fit3, width = 6, height = 7, units = c("in"), dpi=600 )
 ```
 
+```{r}
+g3 = ggplot(data = climate, aes(x = SummerTmmx, y = sqrt(MHa), color = EcoCode)) + 
+  geom_smooth(method="lm", se=TRUE, alpha=0.1) +
+  geom_point(size = 1) +
+  scale_color_manual(values=cbbPalette) +
+    labs(y=("Annual Area burned in millions of Ha\n(Squareroot transformation)"), x= "Summer Temperature", color = "EcoCode") +
+  theme_bw() + 
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(nrow = 1))
+
+g3
+```
 # Combine Tables
 
 ```{r}

@@ -290,7 +290,18 @@ plot_season1
 ggsave("../figures/Analysis/AnalysisSeasonAreaBurned.jpeg", plot = plot_season1, width = 6, height = 2.3, units = c("in"), dpi=600 )
 ```
 
+```{r}
+g4 = ggplot(data = data1, aes(x = season, y = sqrt(MHa), color = EcoCode)) + 
+  geom_smooth(method="lm", se=TRUE, alpha=0.1) +
+  geom_point(size = 1) +
+  scale_color_manual(values=cbbPalette) +
+    labs(y=("Annual Area burned in millions of Ha\n(Squareroot transformation)"), x= "Summer Temperature", color = "EcoCode") +
+  theme_bw() + 
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(nrow = 1))
 
+g4
+```
 
 # Snow Analysis
 
@@ -308,7 +319,7 @@ snow
 # Analysis  Annual Variables
 ## Model snow Moisture Deficit
 ```{r}
-fit1 = lm(Mha ~ MeanCalDoY + EcoCode + MeanCalDoY:EcoCode, data = snow)
+fit1 = lm(sqrt(Mha) ~ MeanCalDoY + EcoCode + MeanCalDoY:EcoCode, data = snow)
 ```
 #### Residuals
 
@@ -447,6 +458,19 @@ plot_snow1
 
 ```{r eval=FALSE, include=FALSE}
 ggsave("../figures/Analysis/AnalysisSnowAreaBurned.jpeg", plot = plot_snow1, width = 6, height = 2.3, units = c("in"), dpi=600 )
+```
+
+```{r}
+g5 = ggplot(data = snow, aes(x = MeanCalDoY, y = sqrt(Mha), color = EcoCode)) + 
+  geom_smooth(method="lm", se=TRUE, alpha=0.1) +
+  geom_point(size = 1) +
+  scale_color_manual(values=cbbPalette) +
+    labs(y=("Annual Area burned in millions of Ha\n(Squareroot transformation)"), x= "Snowmelt (Julian date)", color = "EcoCode") +
+  theme_bw() + 
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(nrow = 1))
+
+g5
 ```
 
 # Correlation

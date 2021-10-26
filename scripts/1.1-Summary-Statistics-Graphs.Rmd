@@ -9,7 +9,11 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Clear workspace
 
+```{r}
+rm(list=ls()) 
+```
 
 # Overview
 
@@ -87,16 +91,17 @@ ecoPalette <- c("#CB453D", "#44CB30", "#2E41C3", "#36A4B4", "#B83491", "#B09C32"
 
 
 ```{r}
-arctic_palette2 = c("#80cdc1", "#dfc27d")
+arctic_palette2 = c('#E1BE6A','#40B0A6')
 ```
 "#66A61E" "#E6AB02" "#A6761D"
 ```{r}
-boreal_palette = c("#66A61E", "#A6761D")
+boreal_palette = c("#006CD1", "#994F00")
 ```
+
 # Data 
 
 ```{r}
-data = read.csv("../data/AllFires/SiberiaFires_v2_2001-2020.csv") 
+data = read.csv("../data/1.0-DataPrep/SiberiaFires2001-2020.csv") 
 ```
 
 ```{r}
@@ -107,8 +112,7 @@ Convert class to factor
 ```{r}
 data = data %>% 
   mutate_at(vars(Class), list(factor)) %>% 
-  mutate_at(vars(EcoBiom), list(factor)) %>% 
-  filter(EcoBiom!="8")
+  mutate_at(vars(EcoBiom), list(factor)) 
 ```
 
 ```{r}
@@ -286,8 +290,9 @@ table8
 
 ## Table 9 Average Fire season length
 
+
 ```{r}
-table9 = data %>% dplyr::select(FireYr, SizeHa, BurnDays, EcoName, EcoCode, MinDay, MaxDay, AvgDay) %>%
+table9 = data %>% dplyr::select(FireYr, SizeHa, TotDays, EcoName, EcoCode, MinDay, MaxDay, AvgDay) %>%
   group_by(FireYr, EcoName, EcoCode) %>%
   summarise(TotHa = sum(SizeHa),
     start = round(min(MinDay), 0),
@@ -514,7 +519,44 @@ data %>%
   summarise(meanFrequency = mean(count)) 
 
 ```
-#Table 18 Class Frequency area
+
+## Table 18 Confidence
+
+```{r}
+data %>% 
+  dplyr::select(FireYr, EcoCode, AvgConf) %>%
+  group_by(FireYr, EcoCode) %>%
+  summarise(min = min(AvgConf),
+            max = max(AvgConf), 
+            mean = mean(AvgConf))
+  
+```
+
+```{r}
+data %>% filter(AvgConf <25) %>%
+  summarise(min = min(SizeHa), 
+            max = max(SizeHa),
+            mean = mean(SizeHa), 
+            n = n())
+```
+
+```{r}
+data %>% filter(AvgConf <15) %>%
+  summarise(min = min(SizeHa), 
+            max = max(SizeHa),
+            mean = mean(SizeHa), 
+            n=n())
+```
+
+```{r}
+data %>% filter(AvgConf <5) %>%
+  summarise(min = min(SizeHa), 
+            max = max(SizeHa),
+            mean = mean(SizeHa), 
+            n=n())
+```
+
+## Table 19 Class Frequency area
 ```{r}
 data
 ```
@@ -1019,7 +1061,7 @@ head(data)
 
 ```{r}
 data14 = data %>%
-  dplyr::select(FireYr, SizeHa, BurnDays, EcoName, EcoCode, MinDay, MaxDay, AvgDay) %>%
+  dplyr::select(FireYr, SizeHa, TotDays, EcoName, EcoCode, MinDay, MaxDay, AvgDay) %>%
   group_by(FireYr, EcoName, EcoCode) %>%
   summarise(TotHa = sum(SizeHa),
     start = round(min(MinDay), 0),
@@ -1160,5 +1202,7 @@ plot2.1
 ```{r eval=FALSE, include=FALSE}
 ggsave("../figures/1.1-Summary/Plot2.png", plot = plot2.1, width = 6, height = 7, units = c("in"), dpi = 600)
 ```
+
+
 # References
 Soja, A. J., H. H. Shugart, A. Sukhinin, S. Conard, and P. W. Stackhouse. 2006. Satellite-Derived Mean Fire Return Intervals As Indicators Of Change In Siberia (1995–2002). Mitigation and Adaptation Strategies for Global Change 11:75–96.

@@ -112,7 +112,7 @@ list_yr = c("2001", "2002", "2003",  "2004", "2005", "2006",  "2007", "2008", "2
 ```
 
 
-# Combine and Summarize
+# Combine 
 Add fire year by dataframe and add columns to convert pixel count to area burned
 ```{r}
 all_data = map2(list_df, list_yr, ~cbind(.x, fire_yr = .y)) %>% 
@@ -126,27 +126,40 @@ all_data = map2(list_df, list_yr, ~cbind(.x, fire_yr = .y)) %>%
 ```{r}
 head(all_data)
 ```
+# Select Ecocode
 
-## Summarize by ecozone and Year
+
 ```{r}
-by_eco_yr = all_data %>% group_by(eco_code, fire_yr) %>% 
+target_eco = c("BT","CKMT", "CPT", "EST", "NSCT", "NST", "TBBMT", "TCST")
+```
+
+```{r}
+all_data1 = all_data %>% filter(eco_code %in% target_eco)
+
+all_data1
+```
+
+# Summarize by ecozone and Year
+```{r}
+by_eco_yr = all_data1 %>% group_by(eco_code, fire_yr) %>% 
   summarise( . ,
-             n = n(),
              Mean = mean(round(burn_ha,1)),
              SD = sd(round(burn_ha,1)),
              Median = median(round(burn_ha,1)),
              Minimum = min(round(burn_ha,1)),
              Maximum = max(round(burn_ha,1)),
              Total = sum(round(burn_ha,1)))
+
+by_eco_yr
 ```
-```{r eval=FALSE, include=FALSE}
+```{r}
 by_eco_yr %>% 
-  dplyr::select(eco_code, fire_yr, Total) %>% 
-  filter(fire_yr == 2001) %>% 
-        write.csv(., '../outputs/test/modis-burnArea-2001.csv',  row.names = FALSE)
+  rename(EcoCode = eco_code, FireYr = fire_yr, ModisMean = Mean, ModisSd = SD, ModisMedian = Median, ModisMin = Minimum, ModisMax=Maximum) %>% 
+        write.csv(., '../outputs/ModisSummary/ModisSummary.csv',  row.names = FALSE)
+
+
 
 ```
-
 
 
 ### Figure
