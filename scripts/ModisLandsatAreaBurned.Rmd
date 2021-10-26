@@ -1,0 +1,124 @@
+---
+title: "Modis and Landsat"
+author: "Anna Talucci"
+date: "10/25/2021"
+output: html_document
+---
+
+# Overview
+
+# Packages
+
+
+```{r include=FALSE}
+library(sp)
+library(sf)
+library(rgdal) # geospatial data
+library(raster)
+library(rgeos) # GIS Geometry
+library(foreign) # deals with dbf files
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(cowplot)
+library(RColorBrewer)
+library(patchwork)
+```
+
+# Graph Themes
+# No Legend
+```{r}
+bar_theme = theme_bw() + 
+  theme(legend.position = "none", legend.title = element_blank()) +
+  theme(panel.grid.major = element_blank()) +
+    theme(axis.title.y = element_text(size = 11, hjust = 0.5, vjust = 1.1),
+        axis.text.x = element_text(size = 10, color = "black"),
+        axis.text.y = element_text(size = 10, color = "black"),
+        axis.line = element_line(colour = "black")) +
+  theme(axis.text.x = element_text(angle=65, vjust=0.6)) 
+```
+
+## Palette
+```{r}
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+```
+
+# Data
+```{r}
+ls = read.csv("../data/1.0-DataPrep/SiberiaFires2001-2020.csv") 
+modis = read.csv('../data/ModisSummary/ModisSummary.csv')
+```
+
+```{r}
+head(ls)
+```
+
+```{r}
+head(modis)
+```
+
+# Organize
+```{r}
+modis1 = modis %>% dplyr::select(EcoCode, FireYr, Total) %>%
+  mutate(satellite ="modis")
+
+modis1
+```
+
+```{r}
+ls1 = ls %>% group_by(FireYr, EcoCode) %>%
+  summarise(Total = sum(SizeHa)) %>%
+  mutate(satellite = "landsat")
+
+ls1
+```
+
+# Combine Data
+```{r}
+
+lsm = bind_rows(modis1, ls1)
+```
+
+
+# Summmarize
+
+```{r}
+lsm1 = lsm %>% 
+  group_by(FireYr, EcoCode, satellite) %>% 
+  pivot_wider(names_from = satellite, values_from = Total) %>%
+  mutate(difference = landsat-modis)
+  
+lsm1
+```
+
+```{r}
+up <- lsm1 %>% filter(difference >= 0)
+down <- lsm1 %>% filter(difference < 0)
+```
+
+```{r fig.height=4, fig.width=6}
+
+g1 = ggplot() + 
+    geom_bar(data = up,aes(x = FireYr,y = difference,fill = as.factor(EcoCode)),stat = "identity") + 
+    geom_bar(data = down,aes(x = FireYr,y = difference,fill = as.factor(EcoCode)),stat = "identity") + 
+    scale_y_continuous(name = ('Difference in area burned\n(millions of hectares)'), breaks=c(0, 5000000, 10000000), labels = c(0, 5, 10)) +
+  scale_fill_manual(values = cbbPalette, name="Ecozone") +
+  xlab('') +
+  geom_hline(yintercept = 0) +
+  bar_theme +
+  theme(legend.position = c(.6, .8), legend.title = element_blank(),
+        legend.key.height = unit(.1, 'in'), 
+        legend.key.width = unit(.1, 'in'),
+        legend.background = element_rect(fill=alpha('white', 0.0))) + 
+  guides(fill = guide_legend( ncol=2), 
+         shape = guide_legend(override.aes = list(size = 0.4)), 
+         color = guide_legend(override.aes = list(size = 0.4))) + theme(legend.text = element_text(size = 8)) 
+
+g1
+```
+
+
+
+```{r eval=FALSE, include=FALSE}
+ggsave("../figures/DiffModisLandsat.png", plot = g1, width = 6, height = 4, units = c("in"), dpi = 600)
+```

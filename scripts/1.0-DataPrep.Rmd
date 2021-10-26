@@ -1,0 +1,69 @@
+---
+title: "Data Prep"
+author: "Anna Talucci"
+date: "10/25/2021"
+output: html_document
+---
+# Clear workspace
+
+```{r}
+rm(list=ls()) 
+```
+
+# Overview
+Data prep for shapefiles of perimeters downloaded from Arctic Data Center
+
+# Packages
+
+
+```{r include=FALSE}
+library(sp)
+library(sf)
+library(rgdal) # geospatial data
+library(raster)
+library(rgeos) # GIS Geometry
+library(foreign) # deals with dbf files
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(cowplot)
+library(RColorBrewer)
+library(patchwork)
+```
+
+# Data 
+
+```{r}
+data = st_read("../data/ADCdownload/SiberiaFires2001-2020.shp", "SiberiaFires2001-2020") 
+```
+
+```{r}
+data
+```
+
+# Add fire Size Class
+
+```{r}
+fire_class = data %>% 
+  mutate(SizeHaR = round(SizeHa, 0)) %>% 
+  mutate(SizeKm2 = round(SizeHa/100, 1)) %>%
+  mutate(Class = ifelse(SizeHaR %in% 200:499, "1",
+                  ifelse(SizeHaR %in% 500:999, "2",
+                   ifelse(SizeHaR %in% 1000:1999, "3",
+                       ifelse(SizeHaR %in% 2000:4999, "4",
+                         ifelse(SizeHaR %in% 5000:9999, "5",
+                            ifelse(SizeHaR %in% 10000:19999, "6",
+                              ifelse(SizeHaR %in% 20000:49999, "7",
+                                ifelse(SizeHaR %in% 50000:99999, "8", "9")))))))))
+
+fire_class
+```
+
+
+# Remove geometry and write attributes to CSV
+```{r}
+fire_class %>% 
+  st_set_geometry(NULL) %>% 
+        write.csv(., '../outputs/1.0-DataPrep/SiberiaFires2001-2020.csv',  row.names = FALSE)
+  
+```
