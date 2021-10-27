@@ -267,7 +267,7 @@ climate2 %>%
 
 
 ### Combo Plot
-```{r}
+```{r fig.height=2.3, fig.width=3}
 g1 = ggplot(data = climate1, aes(x = SummerDef, y = log10SizeHa, color = BTCodes)) + 
   geom_smooth(method="lm", se=TRUE, alpha=0.1) +
   geom_point(size = 1) +
@@ -284,7 +284,7 @@ g1
 ## Precipitation Model
 
 ```{r}
-fit2 = lm(SizeHa ~ SummerPr + EcoCode + SummerPr:EcoCode, data = climate1)
+fit2 = lm(log10SizeHa ~ SummerPr + EcoCode + SummerPr:EcoCode, data = climate1)
 ```
 
 ### Residuals
@@ -399,7 +399,7 @@ climate1 %>%
 
 
 ### Combo Plot
-```{r}
+```{r fig.height=2.3, fig.width=3}
 g2 = ggplot(data = climate1, aes(x = SummerPr, y = log10SizeHa, color = BTCodes)) + 
   geom_smooth(method="lm", se=TRUE, alpha=0.1) +
   geom_point(size = 1) +
@@ -537,16 +537,17 @@ legend_bt = ggplot(data = climate1, aes(x = SummerTmmx, y = log10SizeHa, color =
   geom_smooth(method="lm", se=TRUE, alpha=0.1) +
   geom_point(size = 1) +
   scale_color_manual(values=cbbBTCodesPalette) +
-    labs(y=("Annual area burned\n(ha)"), x=(expression(atop(paste("Summer Temperature (", degree,"C)")))), color = "EcoCode") +
+    labs(y=("Annual area burned\n(ha)"), x=(expression(atop(paste("Summer Temperature (", degree,"C)"))))) +
   theme_bw() + 
-  theme(legend.position = "right") +
+  theme(legend.position = "right",
+        legend.title = element_blank()) +
   guides(colour = guide_legend(ncol = 2))
 
 legend_bt
 ```
 
 ### Combo Plot
-```{r}
+```{r fig.height=2.3, fig.width=3}
 g3 = ggplot(data = climate1, aes(x = SummerTmmx, y = log10SizeHa, color = BTCodes)) + 
   geom_smooth(method="lm", se=TRUE, alpha=0.1) +
   geom_point(size = 1) +
@@ -642,8 +643,8 @@ EcoCode = c("BT", "CKMT", "CPT", "EST", "NSCT", "NST", "TBBMT", "TCST")
 intercept = c(int_BT, int_CKMT, int_CPT, int_EST, int_NSCT, int_NST, int_TBBMT, int_TCST)
 slope = c(slope_BT, slope_CKMT, slope_CPT, slope_EST, slope_NSCT, slope_NST, slope_TBBMT, slope_TCST)
 
-sum_Tmmx =data.frame(EcoCode,intercept, slope)
-sum_Tmmx
+sum_season =data.frame(EcoCode,intercept, slope)
+sum_season
 ```
 
 #### Pulling out r-squared for each group
@@ -658,15 +659,13 @@ season =  fire1 %>%
          results = map(fit, glance)) %>% 
   unnest(results)%>%
   mutate(variable="seasonLength") %>%
-  left_join(sum_Tmmx) %>%
+  left_join(sum_season) %>%
   dplyr::select(variable, EcoCode, intercept, slope, r.squared:nobs)
 
 season
 ```
 
-```{r}
-write.csv(season, '../outputs/ClimateFireAnalysis/TableSeasonLengthAnalysis.csv',  row.names = FALSE)
-```
+
 
 ```{r}
 fire1 %>% 
@@ -682,7 +681,7 @@ fire1 %>%
 
 ### Combo Plot
 
-```{r}
+```{r fig.height=2.3, fig.width=3}
 g4 = ggplot(data = fire1, aes(x = season, y = log10SizeHa, color = BTCodes)) + 
   geom_smooth(method="lm", se=TRUE, alpha=0.1) +
   geom_point(size = 1) +
@@ -776,8 +775,8 @@ EcoCode = c("BT", "CKMT", "CPT", "EST", "NSCT", "NST", "TBBMT", "TCST")
 intercept = c(int_BT, int_CKMT, int_CPT, int_EST, int_NSCT, int_NST, int_TBBMT, int_TCST)
 slope = c(slope_BT, slope_CKMT, slope_CPT, slope_EST, slope_NSCT, slope_NST, slope_TBBMT, slope_TCST)
 
-sum_Tmmx =data.frame(EcoCode,intercept, slope)
-sum_Tmmx
+sum_snow =data.frame(EcoCode,intercept, slope)
+sum_snow
 ```
 
 ### Pulling out r-squared for each group
@@ -792,15 +791,13 @@ snow2 =  snow1 %>%
          results = map(fit, glance)) %>% 
   unnest(results) %>%
   mutate(variable="SnowOff") %>%
-  left_join(sum_Tmmx) %>%
+  left_join(sum_snow) %>%
   dplyr::select(variable, EcoCode, intercept, slope, r.squared:nobs)
 
 snow2
 ```
 
-```{r}
-write.csv(snow2, '../outputs/ClimateFireAnalysis/TableSnowOffAnalysis.csv',  row.names = FALSE)
-```
+
 
 ```{r}
 snow1 %>% 
@@ -815,7 +812,7 @@ snow1 %>%
 
 
 ### Combo Plot
-```{r}
+```{r fig.height=2.3, fig.width=3}
 g5 = ggplot(data = snow1, aes(x = MeanCalDoY, y = log10SizeHa, color = BTCodes)) + 
   geom_smooth(method="lm", se=TRUE, alpha=0.1) +
   geom_point(size = 1) +
@@ -829,12 +826,22 @@ g5
 # Save Summary Tables
 
 ```{r}
-summer_climate = bind_rows(climate2, climate3, climate4)
+summer_climate = bind_rows(climate2, climate3, climate4, snow2, season) %>%
+  mutate(BTCodes = ifelse(EcoCode =="EST", "B1",
+                  ifelse(EcoCode =="NST", "B2",
+                   ifelse(EcoCode =="BT", "T1",
+                       ifelse(EcoCode =="CPT", "T2",
+                         ifelse(EcoCode =="CKMT", "T3",
+                            ifelse(EcoCode =="NSCT", "T4",
+                              ifelse(EcoCode =="TCST", "T5", "T6")))))))) %>%
+  dplyr::select(variable, EcoCode, BTCodes, intercept, slope, adj.r.squared, p.value)
+
+summer_climate
 ```
 
 
 ```{r eval=FALSE, include=FALSE}
-write.csv(summer_climate, '../outputs/ClimateFireAnalysis/TableSummerAnalysis.csv',  row.names = FALSE)
+write.csv(summer_climate, '../outputs/ClimateFireAnalysis/TableClimateAnalysis.csv',  row.names = FALSE)
 ```
 
 # Manuscript Figures 
@@ -843,7 +850,7 @@ legend1 <- get_legend(legend_bt)
 ```
 
 ```{r fig.height=7, fig.width=6}
-fig1 = cowplot::plot_grid(g1, g2, g3, g4, g5, legend1, ncol=2,  align = "hv") 
+fig1 = cowplot::plot_grid(g1, g4, g2, g5, g3, legend1, ncol=2,  align = "hv") 
    
 fig1
 ```
@@ -851,11 +858,11 @@ fig1
 
 ```{r fig.height=7, fig.width=6}
 fig1.1 = fig1  +
-  draw_label("(a)", x = 0.05, y = .99, fontfamily = "sans", fontface = "plain", color = "black", size = 12) +
-   draw_label("(b)", x = 0.55, y = .99, fontfamily = "sans", fontface = "plain", color = "black", size = 12) +
-  draw_label("(c)", x = 0.05, y = .67, fontfamily = "sans", fontface = "plain", color = "black", size = 12) +
-  draw_label("(d)", x = 0.55, y = .67, fontfamily = "sans", fontface = "plain", color = "black", size = 12) +
-  draw_label("(e)", x = 0.05, y = .37, fontfamily = "sans", fontface = "plain", color = "black", size = 12) 
+  draw_label("(a)", x = 0.03, y = .97, fontfamily = "sans", fontface = "plain", color = "black", size = 12) +
+   draw_label("(b)", x = 0.53, y = .97, fontfamily = "sans", fontface = "plain", color = "black", size = 12) +
+  draw_label("(c)", x = 0.03, y = .64, fontfamily = "sans", fontface = "plain", color = "black", size = 12) +
+  draw_label("(d)", x = 0.53, y = .64, fontfamily = "sans", fontface = "plain", color = "black", size = 12) +
+  draw_label("(e)", x = 0.03, y = .33, fontfamily = "sans", fontface = "plain", color = "black", size = 12) 
 
 
 fig1.1
