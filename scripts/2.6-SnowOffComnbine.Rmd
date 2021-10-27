@@ -84,7 +84,7 @@ ecoPalette <- c("#CB453D", "#44CB30", "#2E41C3", "#36A4B4", "#B83491", "#B09C32"
 # Data 
 
 ```{r}
-data = read.csv("../data/2.5-AllFires/SiberiaFires_v2_2001-2020.csv") 
+data = read.csv("../data/1.0-DataPrep/SiberiaFires2001-2020.csv") 
 ```
 
 ```{r}
@@ -140,7 +140,9 @@ snow = bind_rows(sn01, sn02, sn03, sn04, sn05, sn06, sn07, sn08, sn09, sn10, sn1
 data  = snow %>% 
   dplyr::select(IDobj, FireId, FireYr, EcoCode, SIZEha,  calDoy, millis,  relDoy, year) %>% filter(EcoCode !="SSFS") %>%
   mutate(LogRelDoy = log(relDoy)) %>%
-  mutate(Mha =  SIZEha/1000000)
+  mutate(Mha =  SIZEha/1000000) %>%
+  mutate(SizeHa = SIZEha)
+data
 ```
 
 
@@ -149,21 +151,12 @@ data  = snow %>%
 
 data1 = data %>% group_by(EcoCode,  FireYr) %>%
   summarise(snowMean = mean(relDoy),
-            Mha = (sum(SIZEha)/1000000))
+            SizeHa = sum(SizeHa),
+            Mha = (sum(SizeHa)/1000000))
 
 data1
 ```
 
-```{r fig.height=7, fig.width=6}
-ggplot(data = data1, aes(x = snowMean, y = Mha, color = EcoCode)) + 
-  geom_smooth(method="lm", se=TRUE, alpha=0.1) +
-  geom_point(size = 1) +
-  scale_color_manual(values=cbbPalette) +
-  facet_wrap(~EcoCode, scales = "free", ncol=2 ) +
-  theme_bw() +
-  theme(strip.background = element_rect(color=NA, fill="white", size=1.5, linetype="solid")) 
-
-```
 
 # Data by Ecozone
 ```{r}
@@ -230,8 +223,9 @@ str(eco1)
 fill_zero = eco1 %>% 
   left_join(data1) %>%
   dplyr::mutate(Mha = replace_na(Mha, 0)) %>%
+  dplyr::mutate(SizeHa = replace_na(SizeHa, 0)) %>%
   drop_na(.) %>%
-  dplyr::select(EcoCode, FireYr, snowMean, Mha)
+  dplyr::select(EcoCode, FireYr, snowMean, SizeHa, Mha)
   
 
 
@@ -245,9 +239,10 @@ fill_zero
 fillNa = eco1 %>% 
   left_join(data1) %>%
   dplyr::mutate(Mha = replace_na(Mha, 0)) %>%
+  dplyr::mutate(SizeHa = replace_na(SizeHa, 0)) %>%
   filter_all(any_vars(is.na(.))) %>%
   mutate(snowMean = snowMeanEco) %>%
-  dplyr::select(EcoCode, FireYr, snowMean, Mha)
+  dplyr::select(EcoCode, FireYr, snowMean, SizeHa, Mha)
 
 
 fillNa
