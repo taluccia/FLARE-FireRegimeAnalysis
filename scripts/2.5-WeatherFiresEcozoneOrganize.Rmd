@@ -139,7 +139,9 @@ fire_Mha = firew1 %>%
   group_by(EcoCode, FireYr, IDobj) %>%
   summarize(fireHa = min(SIZEha)) %>%
   group_by(EcoCode, FireYr) %>%
-  summarize(MHa = (sum(fireHa))/1000000)
+  summarize(SizeHa = sum(fireHa),
+    MHa = (sum(fireHa))/1000000)
+
 
 fire_Mha
 ```
@@ -270,11 +272,12 @@ For ecozones that have years with no fire, we will use the climate values summar
 mha_0 = ecow1 %>%
   left_join(fires) %>%
   dplyr::mutate(MHa = replace_na(MHa, 0)) %>%
+  dplyr::mutate(SizeHa = replace_na(SizeHa, 0)) %>%
   filter(MHa == 0)  %>%
   mutate(FireMeanDef = EcoMeanDef) %>%
   mutate(FireMeanTmmx = EcoMeanTmmx) %>%
   mutate(FireMeanPr = EcoMeanTotPr) %>%
-  dplyr::select(EcoCode, FireYr, MHa, FireMeanDef, FireMeanTmmx, FireMeanPr)
+  dplyr::select(EcoCode, FireYr, SizeHa, MHa, FireMeanDef, FireMeanTmmx, FireMeanPr)
 
 mha_0 
 ```
@@ -287,12 +290,13 @@ ecow1
 rows_na = ecow1 %>% 
   left_join(fires) %>%
   dplyr::mutate(MHa = replace_na(MHa, 0)) %>%
+  dplyr::mutate(SizeHa = replace_na(SizeHa, 0)) %>%
   filter(MHa != 0)  %>%
   filter_all(any_vars(is.na(.))) %>%
   mutate(FireMeanDef = EcoMeanDef) %>%
   mutate(FireMeanTmmx = EcoMeanTmmx) %>%
   mutate(FireMeanPr = EcoMeanTotPr) %>%
-  dplyr::select(EcoCode, FireYr, MHa, FireMeanDef, FireMeanTmmx, FireMeanPr)
+  dplyr::select(EcoCode, FireYr, SizeHa, MHa, FireMeanDef, FireMeanTmmx, FireMeanPr)
 
 
 rows_na
@@ -302,9 +306,10 @@ rows_na
 mhanot0 = ecow1 %>% 
   left_join(fires) %>%
   dplyr::mutate(MHa = replace_na(MHa, 0)) %>%
+  dplyr::mutate(SizeHa = replace_na(SizeHa, 0)) %>%
   filter(MHa != 0)  %>%
   drop_na(.) %>%
-  dplyr::select(EcoCode, FireYr, MHa, FireMeanDef, FireMeanTmmx, FireMeanPr)
+  dplyr::select(EcoCode, FireYr, SizeHa, MHa, FireMeanDef, FireMeanTmmx, FireMeanPr)
 
 
 mhanot0
@@ -328,7 +333,8 @@ jn_fire_Mha = firew1 %>%
   group_by(EcoCode, FireYr, IDobj) %>%
   summarize(fireHa = min(SIZEha)) %>%
   group_by(EcoCode, FireYr) %>%
-  summarize(MHa = (sum(fireHa))/1000000)
+  summarize(SizeHa = sum(fireHa),
+            MHa = (sum(fireHa))/1000000)
 
 jn_fire_Mha
 ```
@@ -575,7 +581,6 @@ data2
 
 
 ### DEF
-
 ```{r}
 s_fire_def = firew1 %>% 
   filter(month %in% 1:9) %>%
@@ -584,10 +589,24 @@ s_fire_def = firew1 %>%
   drop_na(.) %>%
   ungroup(.) %>%
     group_by(EcoCode, FireYr) %>%
-  summarise(FireMeanDef = mean(fireTotDef))
+  summarise(FireMeanJSDef = mean(fireTotDef))
 
 
 s_fire_def
+```
+
+```{r}
+sas_fire_def = firew1 %>% 
+  filter(month %in% 4:9) %>%
+  group_by(EcoCode, FireYr, IDobj) %>%
+  summarize(fireTotDef = sum(def)) %>%
+  drop_na(.) %>%
+  ungroup(.) %>%
+    group_by(EcoCode, FireYr) %>%
+  summarise(FireMeanASDef = mean(fireTotDef))
+
+
+sas_fire_def
 ```
 
 ### TMMX
@@ -626,6 +645,7 @@ s_fire_pr
 
 ```{r}
 s_fires = fire_Mha %>% 
+  left_join(sas_fire_def) %>%
   left_join(s_fire_def) %>%
   left_join(s_fire_tmmx) %>%
   left_join(s_fire_pr)
@@ -645,10 +665,24 @@ s_eco_def = ecow %>%
   summarize(fireTotDef = sum(def)) %>%
   drop_na(.) %>%
     group_by(EcoCode, FireYr) %>%
-  summarise(EcoMeanDef = mean(fireTotDef))
+  summarise(EcoMeanJSDef = mean(fireTotDef))
 
 
 s_eco_def
+```
+
+```{r}
+s_ecoAS_def = ecow %>% 
+  filter(month %in% 4:9) %>%
+  drop_na(.) %>%
+  group_by(EcoCode, FireYr, EcoId) %>%
+  summarize(fireTotDef = sum(def)) %>%
+  drop_na(.) %>%
+    group_by(EcoCode, FireYr) %>%
+  summarise(EcoMeanASDef = mean(fireTotDef))
+
+
+s_ecoAS_def
 ```
 
 ### TMMX
@@ -688,6 +722,7 @@ s_eco_pr
 ```{r}
 s_ecow1 = s_eco_pr %>% 
   left_join(s_eco_def) %>%
+  left_join(s_ecoAS_def) %>%
   left_join(s_eco_tmmx)
 
 s_ecow1
@@ -704,23 +739,24 @@ s_fires
 s_mha_0 = s_ecow1 %>%
   left_join(s_fires) %>%
   dplyr::mutate(MHa = replace_na(MHa, 0)) %>%
+  dplyr::mutate(SizeHa = replace_na(SizeHa, 0)) %>%
   filter(MHa == 0)  %>%
   dplyr::select(EcoCode:MHa) %>%
-  rename(SummerDef = EcoMeanDef, SummerPr = EcoMeanTotPr, SummerTmmx =EcoMeanTmmx) 
+  rename(SummerDef = EcoMeanASDef, JSDef = EcoMeanJSDef, SummerPr = EcoMeanTotPr, SummerTmmx =EcoMeanTmmx) 
   
 
 s_mha_0 
 ```
 
-
 ```{r}
 s_rows_na = s_ecow1 %>% 
   left_join(s_fires) %>%
   dplyr::mutate(MHa = replace_na(MHa, 0)) %>%
+  dplyr::mutate(SizeHa = replace_na(SizeHa, 0)) %>%
   filter(MHa != 0)  %>%
   filter_all(any_vars(is.na(.))) %>%
   dplyr::select(EcoCode:MHa) %>%
-  rename(SummerDef = EcoMeanDef, SummerPr = EcoMeanTotPr, SummerTmmx =EcoMeanTmmx) 
+  rename(SummerDef = EcoMeanASDef, JSDef = EcoMeanJSDef, SummerPr = EcoMeanTotPr, SummerTmmx =EcoMeanTmmx) 
   
 
 
@@ -732,10 +768,11 @@ s_rows_na
 s_mhanot0 = s_ecow1 %>% 
   left_join(s_fires) %>%
   dplyr::mutate(MHa = replace_na(MHa, 0)) %>%
+  dplyr::mutate(SizeHa = replace_na(SizeHa, 0)) %>%
   filter(MHa != 0)  %>%
   drop_na(.) %>%
-  dplyr::select(EcoCode, FireYr, MHa, FireMeanDef, FireMeanPr, FireMeanTmmx) %>%
-  rename(SummerDef = FireMeanDef, SummerPr = FireMeanPr, SummerTmmx = FireMeanTmmx) 
+  dplyr::select(EcoCode, FireYr, SizeHa, MHa, FireMeanJSDef,FireMeanASDef, FireMeanPr, FireMeanTmmx) %>%
+  rename(SummerDef = FireMeanASDef, JSDef = FireMeanJSDef, SummerPr = FireMeanPr, SummerTmmx = FireMeanTmmx) 
   
 
 
