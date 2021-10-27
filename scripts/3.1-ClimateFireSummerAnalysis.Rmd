@@ -96,6 +96,18 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2"
 ecoPalette <- c("#CB453D", "#44CB30", "#2E41C3", "#36A4B4", "#B83491", "#B09C32", "#AE3D5F", "#2DC086", "#3261A1")
 ```
 
+```{r}
+cbbBTCodesPalette <- c("#009E73", "#0072B2", "#000000", "#E69F00", "#56B4E9", "#F0E442", "#CC79A7", "#D55E00")
+```
+
+4. EST = B1 = "#009E73",
+6. NST = B2 = "#0072B2"
+1. BT = T1 = "#000000"
+2. CKMT = T2 = "#E69F00"
+3. CPT = T3 = "#56B4E9"
+5. NSCT = T4 = "#F0E442"
+8. TCST = T5 = "#CC79A7"
+7. TBBMT = T6 = "#D55E00"
 
 
 
@@ -107,12 +119,23 @@ climate = read.csv("../data/ClimateFire/ClimateFire2001-2020.csv")
 ```
 
 ```{r}
-climate
+climate1 = climate %>% 
+  dplyr::select(EcoCode:MHa, SummerPr, SummerDef, SummerTmmx) %>%
+  mutate(log10SizeHa = log10(SizeHa+.1)) %>%
+  mutate(BTCodes = ifelse(EcoCode =="EST", "B1",
+                  ifelse(EcoCode =="NST", "B2",
+                   ifelse(EcoCode =="BT", "T1",
+                       ifelse(EcoCode =="CPT", "T2",
+                         ifelse(EcoCode =="CKMT", "T3",
+                            ifelse(EcoCode =="NSCT", "T4",
+                              ifelse(EcoCode =="TCST", "T5", "T6"))))))))
+
+climate1
 ```
 # Analysis  Summer Variables
 ## Model Climate Moisture Deficit
 ```{r}
-fit1 = lm(sqrt(MHa) ~ SummerDef + EcoCode + SummerDef:EcoCode, data = climate)
+fit1 = lm(log10SizeHa ~ SummerDef + EcoCode + SummerDef:EcoCode, data = climate1)
 ```
 #### Residuals
 
@@ -200,22 +223,22 @@ reference: https://drsimonj.svbtle.com/running-a-model-on-separate-groups
 lm(formula = biomass_log ~ ndvi + res_meters + ndvi:res_meters, 
     data = field_ndvi_long1
 ```{r}
-climate1 =climate %>% 
+climate2 =climate1 %>% 
   nest(-EcoCode) %>% 
-  mutate(fit = map(data, ~ lm(MHa ~ SummerDef, data = .)),
+  mutate(fit = map(data, ~ lm(log10SizeHa ~ SummerDef, data = .)),
          results = map(fit, glance)) %>% 
   unnest(results)%>%
   mutate(variable="def") %>%
   left_join(sum_Def) %>%
   dplyr::select(variable, EcoCode, intercept, slope, r.squared:nobs)
 
-climate1
+climate2
 ```
 
 ```{r}
-climate %>% 
+climate1 %>% 
   nest(-EcoCode) %>% 
-  mutate(fit = map(data, ~ lm(MHa ~ SummerDef, data = .)),
+  mutate(fit = map(data, ~ lm(log10SizeHa ~ SummerDef, data = .)),
          results = map(fit, glance)) %>% 
   unnest(results) %>% 
   ggplot(aes(x = factor(EcoCode), y = r.squared)) +
@@ -248,12 +271,13 @@ plot_fit1
 ggsave("../figures/Analysis/SummerDefAnalysis.png", plot = plot_fit1, width = 6, height = 7, units = c("in"), dpi=600 )
 ```
 
+### Combo Plot
 ```{r}
-g1 = ggplot(data = climate, aes(x = SummerDef, y = sqrt(MHa), color = EcoCode)) + 
+g1 = ggplot(data = climate1, aes(x = SummerDef, y = log10SizeHa, color = BTCodes)) + 
   geom_smooth(method="lm", se=TRUE, alpha=0.1) +
   geom_point(size = 1) +
-  scale_color_manual(values=cbbPalette) +
-    labs(y=("Annual Area burned in millions of Ha\n(Squareroot transformation)"), x= "CWD", color = "EcoCode") +
+  scale_color_manual(values=cbbBTCodesPalette) +
+    labs(y=("Annual Area burned (ha)\n(Log10 transformation)"), x= "Summer Moisture Deficit", color = "EcoCode") +
   theme_bw() + 
   theme(legend.position = "bottom") +
   guides(colour = guide_legend(nrow = 1))
@@ -271,7 +295,7 @@ ggsave("../figures/Analysis/SummerDefAllEco.png", plot = g1, width = 6, height =
 ## Model Precipitation
 
 ```{r}
-fit2 = lm(sqrt(MHa) ~ SummerPr + EcoCode + SummerPr:EcoCode, data = climate)
+fit2 = lm(SizeHa ~ SummerPr + EcoCode + SummerPr:EcoCode, data = climate)
 ```
 #### Residuals
 
@@ -412,17 +436,30 @@ plot_fit2
 ggsave("../figures/Analysis/SummerPrAnalysis.png", plot = plot_fit2, width = 6, height = 7, units = c("in"), dpi=600 )
 ```
 
+### Combo Plot
 ```{r}
-g2 = ggplot(data = climate, aes(x = SummerPr, y = sqrt(MHa), color = EcoCode)) + 
+g2 = ggplot(data = climate1, aes(x = SummerPr, y = log10SizeHa, color = BTCodes)) + 
   geom_smooth(method="lm", se=TRUE, alpha=0.1) +
   geom_point(size = 1) +
-  scale_color_manual(values=cbbPalette) +
-    labs(y=("Annual Area burned in millions of Ha\n(Squareroot transformation)"), x= "precipitation", color = "EcoCode") +
+  scale_color_manual(values=cbbBTCodesPalette) +
+  labs(y=("Annual area burned (ha)\n(Log10 transformation)"), x="Precipitation (mm)", color = "EcoCode") +
   theme_bw() + 
   theme(legend.position = "bottom") +
   guides(colour = guide_legend(nrow = 1))
 
 g2
+```
+```{r}
+g3 = ggplot(data = climate1, aes(x = SummerTmmx, y = log10SizeHa, color = BTCodes)) + 
+  geom_smooth(method="lm", se=TRUE, alpha=0.1) +
+  geom_point(size = 1) +
+  scale_color_manual(values=cbbBTCodesPalette) +
+    labs(y=("Annual area burned (ha)\n(Log10 transformation)"), x=(expression(atop(paste("Summer Temperature (", degree,"C)")))), color = "EcoCode") +
+  theme_bw() + 
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(nrow = 1))
+
+g3
 ```
 ## Model Max Temperature
 
@@ -545,7 +582,7 @@ climate %>%
 ```
 
 
-### Plot
+### Tiny Plot
 
 ```{r fig.height=2.3, fig.width=6}
 plot_fit3 = ggplot(data = climate, aes(x = SummerTmmx, y = MHa)) + 
@@ -571,12 +608,13 @@ plot_fit3
 ggsave("../figures/Analysis/SummerTmmxAnalysis.png", plot = plot_fit3, width = 6, height = 7, units = c("in"), dpi=600 )
 ```
 
+### COmbo Plot
 ```{r}
-g3 = ggplot(data = climate, aes(x = SummerTmmx, y = sqrt(MHa), color = EcoCode)) + 
+g3 = ggplot(data = climate1, aes(x = SummerTmmx, y = log10SizeHa, color = BTCodes)) + 
   geom_smooth(method="lm", se=TRUE, alpha=0.1) +
   geom_point(size = 1) +
-  scale_color_manual(values=cbbPalette) +
-    labs(y=("Annual Area burned in millions of Ha\n(Squareroot transformation)"), x= "Summer Temperature", color = "EcoCode") +
+  scale_color_manual(values=cbbBTCodesPalette) +
+    labs(y=("Annual area burned (ha)\n(Log10 transformation)"), x=(expression(atop(paste("Summer Temperature (", degree,"C)")))), color = "EcoCode") +
   theme_bw() + 
   theme(legend.position = "bottom") +
   guides(colour = guide_legend(nrow = 1))
@@ -590,18 +628,34 @@ summer_climate = bind_rows(climate1, climate2, climate3)
 ```
 
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 write.csv(summer_climate, '../outputs/4.4ClimateFireAnalysis/TableSummerAnalysis.csv',  row.names = FALSE)
 ```
 
 
-#  Combine plots
+#  Combine tiny plots
 
 ```{r fig.height=7, fig.width=6}
 comboplot1 = cowplot::plot_grid(plot_fit1, plot_fit2, plot_fit3, ncol=1, rel_heights = c(1, 1, 1), align = "hv", labels = c('(a)', '(b)', '(c)'), label_size = 12, label_fontface = "plain") 
    
 
 comboplot1
+```
+
+
+
+
+```{r eval=FALSE, include=FALSE}
+ggsave("../figures/Analysis/SummerClimateTrends.png", plot = comboplot1, width = 6, height = 7, units = c("in"), dpi=600 )
+```
+
+#  Combine combo plots
+
+```{r fig.height=7, fig.width=6}
+comboplot2 = cowplot::plot_grid(g1, g2, g3, ncol=2,  align = "hv", labels = c('(a)', '(b)', '(c)'), label_size = 12, label_fontface = "plain") 
+   
+
+comboplot2
 ```
 
 
