@@ -594,7 +594,7 @@ data %>%
 # Summary Data Figures
 ## Figure 1---Area burned by Year and Ecozone
 ```{r}
-data1 = data %>% group_by(FireYr, EcoName, EcoCode) %>%
+data1 = data %>% group_by(FireYr, EcoName, EcoCode, BTCodes) %>%
   summarise(TotHa = sum(SizeHa)) %>% 
   mutate(MHa=TotHa/1000000) %>%
   as.data.frame(.)
@@ -603,7 +603,7 @@ data1
 
 
 ```{r fig.height=6, fig.width=6}
-fig1 = ggplot(data1, aes(x=FireYr, y=TotHa, fill=EcoCode)) +
+fig1 = ggplot(data1, aes(x=FireYr, y=TotHa, fill=BTCodes)) +
   geom_bar(stat="identity", width = 0.5, position = position_stack(reverse = FALSE)) +
   scale_y_continuous(name = ('Area burned \n(millions of hectares)'), breaks=c(0, 5000000, 10000000, 15000000, 20000000, 25000000, 30000000), labels = c(0, 5, 10, 15, 20, 25, 30)) +
   scale_fill_manual(values = cbbBTCodesPalette, name="Ecozone") +
@@ -686,8 +686,8 @@ ggsave("../figures/1.1-Summary/Figure2.png", plot = fig2, width = 6, height = 5,
 
 
 ```{r}
-data3 = data %>% dplyr::select(FireYr, SizeHa, EcoName, EcoCode, Class) %>%
-  group_by(FireYr, EcoName, Class, EcoCode) %>%
+data3 = data %>% dplyr::select(FireYr, SizeHa, EcoName, EcoCode, BTCodes, Class) %>%
+  group_by(FireYr, EcoName, Class, EcoCode, BTCodes) %>%
   summarise(totha = sum(SizeHa)) %>%
   as.data.frame(.) %>%
   mutate(milha = totha/1000000)
@@ -696,10 +696,10 @@ data3
 ```
 
 1 (200-499 ha), 2 (500-1000 ha), 3 (500-1,000 ha), 4 (2,000-10,000), 5 (5,000-10,000), 6 (10,000-20,000), 7 (20,000-50,000), 8 (50,000-100,000), 9 (>100,000)
-```{r fig.height=3, fig.width=6}
+```{r fig.height=6, fig.width=3}
 fig3 = ggplot(data3, aes(x=FireYr, y=milha, fill=Class)) +
   geom_bar(stat="identity", width = 0.5, position = position_stack(reverse = FALSE)) +
-  facet_wrap(~EcoCode, scales = "free_y", ncol=4) +
+  facet_wrap(~BTCodes, scales = "free_y", ncol=2) +
 scale_y_continuous(name = ('Millions of hectares (Mha)')) +
 
   scale_fill_brewer(palette = "Spectral",  name="Size class (ha)", labels = c("200-499", "500-999", "1,000-1,999", "2,000-4,999", "5,000-9,999", "10,000-19,999", "20,000-49,999", "50,000-99,999", ">100,000")) +
@@ -726,8 +726,8 @@ head(data)
 ```
 ```{r}
 data4 = data %>%
-  dplyr::select(FireYr,EcoName, EcoCode, MinDay, MaxDay, AvgDay) %>%
-  group_by(FireYr, EcoName, EcoCode) %>%
+  dplyr::select(FireYr,EcoName, EcoCode, BTCodes, MinDay, MaxDay, AvgDay) %>%
+  group_by(FireYr, EcoName, EcoCode, BTCodes) %>%
   summarise(start = round(min(MinDay), 0),
             end = round(max(MaxDay), 0)) %>%
   mutate(season = end-start)
@@ -763,7 +763,7 @@ fig4.1 = ggplot(data4, aes(x=FireYr)) +
   geom_line(aes(y=end,  color="end"), size=1) +
   geom_hline(yintercept=182, color = "black", linetype = "longdash") +
    scale_color_manual(values = c("start"="#FF6347","end"="#009CB8"), labels = c("Start", "End")) +
-  facet_wrap(~EcoCode, scales = "free_y", ncol=2) +
+  facet_wrap(~BTCodes, scales = "free_y", ncol=2) +
   xlab('') +
   ylab('Julian date') +
   scale_y_continuous(name = "Julian date",
@@ -948,8 +948,8 @@ fig9
 
 ```{r}
 data10 = data %>% 
-  dplyr::select(FireYr, SizeKm2, EcoName, EcoCode, Ecokm2) %>%
-  group_by(FireYr, EcoName, EcoCode) %>%
+  dplyr::select(FireYr, SizeKm2, EcoName, EcoCode, Ecokm2, BTCodes) %>%
+  group_by(FireYr, EcoName, EcoCode, BTCodes) %>%
   count(FireYr, name='count') %>%
   as.data.frame(.)
 
@@ -959,7 +959,7 @@ data10
 
 
 ```{r fig.height=6, fig.width=6}
-fig10 = ggplot(data10, aes(x=FireYr, y=count, fill=EcoCode)) +
+fig10 = ggplot(data10, aes(x=FireYr, y=count, fill=BTCodes)) +
   geom_bar(stat="identity", width = 0.5, position = position_stack(reverse = FALSE)) +
   scale_y_continuous(name = ('Frequency (Count)')) +
   scale_fill_manual(values = cbbBTCodesPalette, name="Ecozone") +
@@ -1114,8 +1114,8 @@ ggsave("../figures/1.1-Summary/Figure14.png", plot = fig14, width = 6, height = 
 ## Figure 15-Frequency by Class
 ```{r}
 data15 = data %>% 
-  dplyr::select(FireYr, SizeHa, EcoName, EcoCode, Class) %>%
-  group_by(FireYr, EcoName, Class, EcoCode) %>%
+  dplyr::select(FireYr, SizeHa, EcoName, EcoCode, BTCodes, Class) %>%
+  group_by(FireYr, EcoName, Class, EcoCode, BTCodes) %>%
   count(FireYr, name='count') %>%
   as.data.frame(.) 
 
@@ -1125,10 +1125,10 @@ data15
 
 
 1 (200-499 ha), 2 (500-1000 ha), 3 (500-1,000 ha), 4 (2,000-10,000), 5 (5,000-10,000), 6 (10,000-20,000), 7 (20,000-50,000), 8 (50,000-100,000), 9 (>100,000)
-```{r fig.height=3, fig.width=6}
+```{r fig.height=6, fig.width=3}
 fig15 = ggplot(data15, aes(x=FireYr, y=count, fill=Class)) +
   geom_bar(stat="identity", width = 0.5, position = position_stack(reverse = FALSE)) +
-  facet_wrap(~EcoCode, scales = "free_y", ncol=4) +
+  facet_wrap(~BTCodes, scales = "free_y", ncol=2) +
 scale_y_continuous(name = ('Number of fires')) +
 
   scale_fill_brewer(palette = "Spectral",  name="Size class (ha)", labels = c("200-499", "500-999", "1,000-1,999", "2,000-4,999", "5,000-9,999", "10,000-19,999", "20,000-49,999", "50,000-99,999", ">100,000")) +
@@ -1207,9 +1207,9 @@ legend15 <- get_legend(fig15_leg)
 
 ```{r fig.height=6, fig.width=6}
 
-plot2 = cowplot::plot_grid(fig3, fig15,  ncol=1) +
+plot2 = cowplot::plot_grid(fig3, fig15,  ncol=2) +
     draw_label("(a)", x = .03, y = .975, size = 10) +
-   draw_label("(b)", x = .03, y = .475, size = 10) 
+   draw_label("(b)", x = .53, y = .975, size = 10) 
 
 plot2
 ```
