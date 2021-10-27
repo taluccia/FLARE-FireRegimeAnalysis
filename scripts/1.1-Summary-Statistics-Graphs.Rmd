@@ -89,6 +89,19 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2"
 ecoPalette <- c("#CB453D", "#44CB30", "#2E41C3", "#36A4B4", "#B83491", "#B09C32", "#AE3D5F", "#2DC086", "#3261A1")
 ```
 
+```{r}
+cbbBTCodesPalette <- c("#009E73", "#0072B2", "#000000", "#E69F00", "#56B4E9", "#F0E442", "#CC79A7", "#D55E00")
+```
+
+4. EST = B1 = "#009E73",
+6. NST = B2 = "#0072B2"
+1. BT = T1 = "#000000"
+2. CKMT = T2 = "#E69F00"
+3. CPT = T3 = "#56B4E9"
+5. NSCT = T4 = "#F0E442"
+8. TCST = T5 = "#CC79A7"
+7. TBBMT = T6 = "#D55E00"
+
 
 ```{r}
 arctic_palette2 = c('#E1BE6A','#40B0A6')
@@ -112,7 +125,15 @@ Convert class to factor
 ```{r}
 data = data %>% 
   mutate_at(vars(Class), list(factor)) %>% 
-  mutate_at(vars(EcoBiom), list(factor)) 
+  mutate_at(vars(EcoBiom), list(factor)) %>%
+  mutate(BTCodes = ifelse(EcoCode =="EST", "B1",
+                  ifelse(EcoCode =="NST", "B2",
+                   ifelse(EcoCode =="BT", "T1",
+                       ifelse(EcoCode =="CPT", "T2",
+                         ifelse(EcoCode =="CKMT", "T3",
+                            ifelse(EcoCode =="NSCT", "T4",
+                              ifelse(EcoCode =="TCST", "T5", "T6"))))))))
+
 ```
 
 ```{r}
@@ -585,7 +606,7 @@ data1
 fig1 = ggplot(data1, aes(x=FireYr, y=TotHa, fill=EcoCode)) +
   geom_bar(stat="identity", width = 0.5, position = position_stack(reverse = FALSE)) +
   scale_y_continuous(name = ('Area burned \n(millions of hectares)'), breaks=c(0, 5000000, 10000000, 15000000, 20000000, 25000000, 30000000), labels = c(0, 5, 10, 15, 20, 25, 30)) +
-  scale_fill_manual(values = cbbPalette, name="Ecozone") +
+  scale_fill_manual(values = cbbBTCodesPalette, name="Ecozone") +
   xlab('') +
   bar_theme +
   theme(legend.position = c(.6, .8), legend.title = element_blank(),
@@ -941,7 +962,7 @@ data10
 fig10 = ggplot(data10, aes(x=FireYr, y=count, fill=EcoCode)) +
   geom_bar(stat="identity", width = 0.5, position = position_stack(reverse = FALSE)) +
   scale_y_continuous(name = ('Frequency (Count)')) +
-  scale_fill_manual(values = cbbPalette, name="Ecozone") +
+  scale_fill_manual(values = cbbBTCodesPalette, name="Ecozone") +
   xlab('') +
   bar_theme +
   theme(legend.position = c(.6, .85), legend.title = element_blank(),
