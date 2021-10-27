@@ -46,55 +46,22 @@ library(tibble)
 # Define graph Theme and color Palette 
 
 ##Themes
+
 ```{r}
-lb_theme = theme_bw() + theme(legend.position = "bottom") +  
-  theme(panel.grid.major = element_blank()) +
-    theme(axis.title.y = element_text(size = 11, hjust = 0.5, vjust = 1.1),
-        axis.text.x = element_text(size = 10, color = "black"),
-        axis.text.y = element_text(size = 10, color = "black"),
+
+reg_theme = theme_bw() + theme(legend.position = "none") +
+  theme(plot.margin = unit(c(t = 0.3, r = 0.3, b = 0.3, l = 0.1), "cm")) +
+  theme(axis.title.x = element_text(size = 10, hjust = 0.5, vjust = -0.2),
+        axis.title.y = element_text(size = 10, hjust = 0.5, vjust = 1.1),
+        axis.text.x = element_text(size = 9, color = "black"),
+        axis.text.y = element_text(size = 9, color = "black"),
+        panel.background = element_blank(), 
         axis.line = element_line(colour = "black"))
-```
 
-```{r}
-comp_theme = theme_bw() + theme(legend.position = "none") +  
-  theme(panel.grid.major = element_blank()) +
-    theme(axis.title.y = element_text(size = 11, hjust = 0.5, vjust = 1.1),
-        axis.text.x = element_text(size = 10, color = "black"),
-        axis.text.y = element_text(size = 10, color = "black"),
-        axis.line = element_line(colour = "black"))
 ```
-
-### No Legend
-```{r}
-bar_theme = theme_bw() + 
-  theme(legend.position = "none", legend.title = element_blank()) +
-  theme(panel.grid.major = element_blank()) +
-    theme(axis.title.y = element_text(size = 11, hjust = 0.5, vjust = 1.1),
-        axis.text.x = element_text(size = 10, color = "black"),
-        axis.text.y = element_text(size = 10, color = "black"),
-        axis.line = element_line(colour = "black")) +
-  theme(axis.text.x = element_text(angle=65, vjust=0.6)) 
-```
-
-```{r}
-bar2_theme = theme_bw() + 
-  theme(panel.grid.major = element_blank()) +
-    theme(axis.title.y = element_text(size = 11, hjust = 0.5, vjust = 1.1),
-        axis.text.x = element_text(size = 10, color = "black"),
-        axis.text.y = element_text(size = 10, color = "black"),
-        axis.line = element_line(colour = "black")) +
-  theme(axis.text.x = element_text(angle=65, vjust=0.6)) 
-```
-
 
 ## Palettes
-```{r}
-cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-```
 
-```{r}
-ecoPalette <- c("#CB453D", "#44CB30", "#2E41C3", "#36A4B4", "#B83491", "#B09C32", "#AE3D5F", "#2DC086", "#3261A1")
-```
 
 ```{r}
 cbbBTCodesPalette <- c("#009E73", "#0072B2", "#000000", "#E69F00", "#56B4E9", "#F0E442", "#CC79A7", "#D55E00")
@@ -113,7 +80,7 @@ cbbBTCodesPalette <- c("#009E73", "#0072B2", "#000000", "#E69F00", "#56B4E9", "#
 
 # Data 
 
-## Ecozone
+## Climate
 ```{r}
 climate = read.csv("../data/ClimateFire/ClimateFire2001-2020.csv") 
 ```
@@ -132,42 +99,93 @@ climate1 = climate %>%
 
 climate1
 ```
+
+## Snow
+```{r}
+snow = read.csv("../data/SnowData/SnowOff2001-2020.csv") 
+```
+
+```{r}
+snow1 = snow %>% 
+  mutate(log10SizeHa = log10(SizeHa+.1)) %>%
+  mutate(BTCodes = ifelse(EcoCode =="EST", "B1",
+                  ifelse(EcoCode =="NST", "B2",
+                   ifelse(EcoCode =="BT", "T1",
+                       ifelse(EcoCode =="CPT", "T2",
+                         ifelse(EcoCode =="CKMT", "T3",
+                            ifelse(EcoCode =="NSCT", "T4",
+                              ifelse(EcoCode =="TCST", "T5", "T6"))))))))
+
+snow1
+
+```
+
+## Fire 
+
+```{r}
+fire = read.csv("../data/1.0-DataPrep/SiberiaFires2001-2020.csv") 
+```
+
+```{r}
+fire 
+```
+```{r}
+fire1 = fire %>%
+  group_by(FireYr, EcoName, EcoCode) %>%
+  summarise(start = round(min(MinDay), 0),
+            end = round(max(MaxDay), 0),
+            SizeHa = (sum(SizeHa))) %>%
+  mutate(season = end-start) %>% 
+  mutate(log10SizeHa = log10(SizeHa+.1)) %>%
+  mutate(BTCodes = ifelse(EcoCode =="EST", "B1",
+                  ifelse(EcoCode =="NST", "B2",
+                   ifelse(EcoCode =="BT", "T1",
+                       ifelse(EcoCode =="CPT", "T2",
+                         ifelse(EcoCode =="CKMT", "T3",
+                            ifelse(EcoCode =="NSCT", "T4",
+                              ifelse(EcoCode =="TCST", "T5", "T6"))))))))
+
+fire1
+
+```
+
 # Analysis  Summer Variables
-## Model Climate Moisture Deficit
+## Moisture Deficit Model
 ```{r}
 fit1 = lm(log10SizeHa ~ SummerDef + EcoCode + SummerDef:EcoCode, data = climate1)
 ```
-#### Residuals
+
+### Residuals
 
 
 ```{r}
 # Get the fitted value for each observation
-climate$fit1 = fitted(fit1)
+climate1$fit1 = fitted(fit1)
 ```
 
 ```{r}
 # Get the residuals of the model
-climate$res1 = residuals(fit1)
+climate1$res1 = residuals(fit1)
 ```
 
 ```{r}
-qplot(x = fit1, y = res1, data = climate,
+qplot(x = fit1, y = res1, data = climate1,
 main = "Residuals vs Fitted Values")
 ```
 
 ```{r}
-qplot(x = SummerDef, y = res1, data = climate,
+qplot(x = SummerDef, y = res1, data = climate1,
 xlab = "CMD",
 ylab = "Residuals",
 main = "Residuals vs CMD")
 ```
 ```{r}
-qplot(x = factor(1), y = res1, data = climate, geom = "boxplot")
+qplot(x = factor(1), y = res1, data = climate1, geom = "boxplot")
 ```
 
 ```{r}
-qqnorm(climate$res1, main = "Normal QQ Plot of Residuals")
-qqline(climate$res1) # add reference line to the qq plot
+qqnorm(climate1$res1, main = "Normal QQ Plot of Residuals")
+qqline(climate1$res1) # add reference line to the qq plot
 ```
 
 ```{r}
@@ -207,7 +225,7 @@ slope1_TCST = coef(fit1)[2] + coef(fit1)[16]
 
 ```
 
-#### Create Dataframe with summry output
+### Create Dataframe with summry output
 ```{r}
 EcoCode = c("BT", "CKMT", "CPT", "EST", "NSCT", "NST", "TBBMT", "TCST")
 intercept = c(int1_BT, int1_CKMT, int1_CPT, int1_EST, int1_NSCT, int1_NST, int1_TBBMT, int1_TCST)
@@ -235,8 +253,8 @@ climate2 =climate1 %>%
 climate2
 ```
 
-```{r}
-climate1 %>% 
+```{r eval=FALSE, include=FALSE}
+climate2 %>% 
   nest(-EcoCode) %>% 
   mutate(fit = map(data, ~ lm(log10SizeHa ~ SummerDef, data = .)),
          results = map(fit, glance)) %>% 
@@ -254,57 +272,51 @@ g1 = ggplot(data = climate1, aes(x = SummerDef, y = log10SizeHa, color = BTCodes
   geom_smooth(method="lm", se=TRUE, alpha=0.1) +
   geom_point(size = 1) +
   scale_color_manual(values=cbbBTCodesPalette) +
-    labs(y=("Annual Area burned (ha)\n(Log10 transformation)"), x= "Summer Moisture Deficit", color = "EcoCode") +
-  theme_bw() + 
-  theme(legend.position = "bottom") +
-  guides(colour = guide_legend(nrow = 1))
+    labs(y=("Annual Area burned\n(ha)"), x= "Summer Moisture Deficit", color = "EcoCode") +
+  reg_theme
 
 g1
 ```
 
-```{r eval=FALSE, include=FALSE}
-ggsave("../figures/Analysis/SummerDefAllEco.png", plot = g1, width = 6, height = 4, units = c("in"), dpi=600 )
-```
 
 
 
-
-## Model Precipitation
+## Precipitation Model
 
 ```{r}
-fit2 = lm(SizeHa ~ SummerPr + EcoCode + SummerPr:EcoCode, data = climate)
+fit2 = lm(SizeHa ~ SummerPr + EcoCode + SummerPr:EcoCode, data = climate1)
 ```
-#### Residuals
 
+### Residuals
 
 ```{r}
 # Get the fitted value for each observation
-climate$fit2 = fitted(fit2)
+climate1$fit2 = fitted(fit2)
 ```
 
 ```{r}
 # Get the residuals of the model
-climate$res2 = residuals(fit2)
+climate1$res2 = residuals(fit2)
 ```
 
 ```{r}
-qplot(x = fit2, y = res2, data = climate,
+qplot(x = fit2, y = res2, data = climate1,
 main = "Residuals vs Fitted Values")
 ```
 
 ```{r}
-qplot(x = SummerPr, y = res2, data = climate,
+qplot(x = SummerPr, y = res2, data = climate1,
 xlab = "CMD",
 ylab = "Residuals",
 main = "Residuals vs CMD")
 ```
 ```{r}
-qplot(x = factor(1), y = res1, data = climate, geom = "boxplot")
+qplot(x = factor(1), y = res1, data = climate1, geom = "boxplot")
 ```
 
 ```{r}
-qqnorm(climate$res2, main = "Normal QQ Plot of Residuals")
-qqline(climate$res2) # add reference line to the qq plot
+qqnorm(climate1$res2, main = "Normal QQ Plot of Residuals")
+qqline(climate1$res2) # add reference line to the qq plot
 ```
 
 ```{r}
@@ -362,22 +374,22 @@ reference: https://drsimonj.svbtle.com/running-a-model-on-separate-groups
 lm(formula = biomass_log ~ ndvi + res_meters + ndvi:res_meters, 
     data = field_ndvi_long1
 ```{r}
-climate2 =  climate %>% 
+climate3 =  climate1 %>% 
   nest(-EcoCode) %>% 
-  mutate(fit = map(data, ~ lm(MHa ~ SummerPr, data = .)),
+  mutate(fit = map(data, ~ lm(log10SizeHa ~ SummerPr, data = .)),
          results = map(fit, glance)) %>% 
   unnest(results)  %>%
   mutate(variable="pr") %>%
   left_join(sum_Pr) %>%
   dplyr::select(variable, EcoCode, intercept, slope, r.squared:nobs)
 
-climate2
+climate3
 ```
 
 ```{r}
-climate %>% 
+climate1 %>% 
   nest(-EcoCode) %>% 
-  mutate(fit = map(data, ~ lm(MHa ~ SummerPr, data = .)),
+  mutate(fit = map(data, ~ lm(log10SizeHa ~ SummerPr, data = .)),
          results = map(fit, glance)) %>% 
   unnest(results) %>% 
   ggplot(aes(x = factor(EcoCode), y = r.squared)) +
@@ -392,62 +404,48 @@ g2 = ggplot(data = climate1, aes(x = SummerPr, y = log10SizeHa, color = BTCodes)
   geom_smooth(method="lm", se=TRUE, alpha=0.1) +
   geom_point(size = 1) +
   scale_color_manual(values=cbbBTCodesPalette) +
-  labs(y=("Annual area burned (ha)\n(Log10 transformation)"), x="Precipitation (mm)", color = "EcoCode") +
-  theme_bw() + 
-  theme(legend.position = "bottom") +
-  guides(colour = guide_legend(nrow = 1))
+  labs(y=("Annual area burned\n(ha)"), x="Summer precipitation (mm)") +
+  reg_theme
 
 g2
 ```
-```{r}
-g3 = ggplot(data = climate1, aes(x = SummerTmmx, y = log10SizeHa, color = BTCodes)) + 
-  geom_smooth(method="lm", se=TRUE, alpha=0.1) +
-  geom_point(size = 1) +
-  scale_color_manual(values=cbbBTCodesPalette) +
-    labs(y=("Annual area burned (ha)\n(Log10 transformation)"), x=(expression(atop(paste("Summer Temperature (", degree,"C)")))), color = "EcoCode") +
-  theme_bw() + 
-  theme(legend.position = "bottom") +
-  guides(colour = guide_legend(nrow = 1))
 
-g3
-```
-## Model Max Temperature
+## Max Temperature model
 
 
 ```{r}
-fit3 = lm(sqrt(MHa) ~ SummerTmmx + EcoCode + SummerTmmx:EcoCode, data = climate)
+fit3 = lm(log10SizeHa ~ SummerTmmx + EcoCode + SummerTmmx:EcoCode, data = climate1)
 ```
-#### Residuals
 
-
+### Residuals
 ```{r}
 # Get the fitted value for each observation
-climate$fit3 = fitted(fit3)
+climate1$fit3 = fitted(fit3)
 ```
 
 ```{r}
 # Get the residuals of the model
-climate$res2 = residuals(fit3)
+climate1$res2 = residuals(fit3)
 ```
 
 ```{r}
-qplot(x = fit3, y = res2, data = climate,
+qplot(x = fit3, y = res2, data = climate1,
 main = "Residuals vs Fitted Values")
 ```
 
 ```{r}
-qplot(x = SummerTmmx, y = res2, data = climate,
+qplot(x = SummerTmmx, y = res2, data = climate1,
 xlab = "CMD",
 ylab = "Residuals",
 main = "Residuals vs CMD")
 ```
 ```{r}
-qplot(x = factor(1), y = res1, data = climate, geom = "boxplot")
+qplot(x = factor(1), y = res1, data = climate1, geom = "boxplot")
 ```
 
 ```{r}
-qqnorm(climate$res2, main = "Normal QQ Plot of Residuals")
-qqline(climate$res2) # add reference line to the qq plot
+qqnorm(climate1$res2, main = "Normal QQ Plot of Residuals")
+qqline(climate1$res2) # add reference line to the qq plot
 ```
 
 ```{r}
@@ -491,7 +489,7 @@ slope3_TCST = coef(fit3)[2] + coef(fit3)[16]
 
 ### Create Dataframe with summry output
 ```{r}
-unique(climate$EcoCode)
+unique(climate1$EcoCode)
 ```
 ```{r}
 EcoCode = c("BT", "CKMT", "CPT", "EST", "NSCT", "NST", "TBBMT", "TCST")
@@ -508,22 +506,22 @@ reference: https://drsimonj.svbtle.com/running-a-model-on-separate-groups
 lm(formula = biomass_log ~ ndvi + res_meters + ndvi:res_meters, 
     data = field_ndvi_long1
 ```{r}
-climate3 =  climate %>% 
+climate4 =  climate1 %>% 
   nest(-EcoCode) %>% 
-  mutate(fit = map(data, ~ lm(MHa ~ SummerTmmx, data = .)),
+  mutate(fit = map(data, ~ lm(log10SizeHa ~ SummerTmmx, data = .)),
          results = map(fit, glance)) %>% 
   unnest(results) %>%
   mutate(variable="tmmx") %>%
   left_join(sum_Tmmx) %>%
   dplyr::select(variable, EcoCode, intercept, slope, r.squared:nobs)
 
-climate3
+climate4
 ```
 
 ```{r}
-climate %>% 
+climate1 %>% 
   nest(-EcoCode) %>% 
-  mutate(fit = map(data, ~ lm(MHa ~ SummerTmmx, data = .)),
+  mutate(fit = map(data, ~ lm(log10SizeHa ~ SummerTmmx, data = .)),
          results = map(fit, glance)) %>% 
   unnest(results) %>% 
   ggplot(aes(x = factor(EcoCode), y = r.squared)) +
@@ -533,60 +531,338 @@ climate %>%
 
 
 
-### COmbo Plot
+### Legend Plot
+```{r}
+legend_bt = ggplot(data = climate1, aes(x = SummerTmmx, y = log10SizeHa, color = BTCodes)) + 
+  geom_smooth(method="lm", se=TRUE, alpha=0.1) +
+  geom_point(size = 1) +
+  scale_color_manual(values=cbbBTCodesPalette) +
+    labs(y=("Annual area burned\n(ha)"), x=(expression(atop(paste("Summer Temperature (", degree,"C)")))), color = "EcoCode") +
+  theme_bw() + 
+  theme(legend.position = "right") +
+  guides(colour = guide_legend(ncol = 2))
+
+legend_bt
+```
+
+### Combo Plot
 ```{r}
 g3 = ggplot(data = climate1, aes(x = SummerTmmx, y = log10SizeHa, color = BTCodes)) + 
   geom_smooth(method="lm", se=TRUE, alpha=0.1) +
   geom_point(size = 1) +
   scale_color_manual(values=cbbBTCodesPalette) +
-    labs(y=("Annual area burned (ha)\n(Log10 transformation)"), x=(expression(atop(paste("Summer Temperature (", degree,"C)")))), color = "EcoCode") +
-  theme_bw() + 
-  theme(legend.position = "bottom") +
-  guides(colour = guide_legend(nrow = 1))
+    labs(y=("Annual area burned\n(ha)"), x=(expression(atop(paste("Summer Temperature (", degree,"C)"))))) +
+  reg_theme
 
 g3
 ```
-# Combine Tables
+
+
+
+
+## Fire Seaon Model
+```{r}
+fit4 = lm(log10SizeHa ~ season + EcoCode + season:EcoCode, data = fire1)
+```
+#### Residuals
+
 
 ```{r}
-summer_climate = bind_rows(climate1, climate2, climate3)
+# Get the fitted value for each observation
+fire1$fit4 = fitted(fit4)
+```
+
+```{r}
+# Get the residuals of the model
+fire1$res4 = residuals(fit4)
+```
+
+```{r}
+qplot(x = fit4, y = res4, data = fire1,
+main = "Residuals vs Fitted Values")
+```
+
+
+```{r}
+qplot(x = season, y = res4, data = fire1,
+xlab = "season",
+ylab = "Residuals",
+main = "Residuals vs season")
+```
+```{r}
+qplot(x = factor(1), y = res4, data = fire1, geom = "boxplot")
+```
+
+```{r}
+qqnorm(fire1$res4, main = "Normal QQ Plot of Residuals")
+qqline(fire1$res4) # add reference line to the qq plot
+```
+
+```{r}
+plot(fit4, which = 1) # residual vs fitted values
+```
+
+```{r}
+plot(fit4, which = 2) # qqnorm plot of residuals
+```
+
+### Summary
+```{r}
+summary(fit4)
+```
+```{r}
+summary(fit4)$r.squared 
+```
+```{r}
+int_BT = coef(fit4)[1]
+int_CKMT = coef(fit4)[1] + coef(fit4)[3]
+int_CPT = coef(fit4)[1] + coef(fit4)[4]
+int_EST = coef(fit4)[1] + coef(fit4)[5]
+int_NSCT = coef(fit4)[1] + coef(fit4)[6]
+int_NST = coef(fit4)[1] + coef(fit4)[7]
+int_TBBMT = coef(fit4)[1] + coef(fit4)[8]
+int_TCST = coef(fit4)[1] + coef(fit4)[9]
+
+slope_BT = coef(fit4)[2]
+slope_CKMT = coef(fit4)[2] + coef(fit4)[10]
+slope_CPT = coef(fit4)[2] + coef(fit4)[11]
+slope_EST = coef(fit4)[2] + coef(fit4)[12]
+slope_NSCT = coef(fit4)[2] + coef(fit4)[13]
+slope_NST = coef(fit4)[2] + coef(fit4)[14]
+slope_TBBMT = coef(fit4)[2] + coef(fit4)[15]
+slope_TCST = coef(fit4)[2] + coef(fit4)[16]
+
+
+```
+
+#### Create Dataframe with summry output
+
+```{r}
+EcoCode = c("BT", "CKMT", "CPT", "EST", "NSCT", "NST", "TBBMT", "TCST")
+intercept = c(int_BT, int_CKMT, int_CPT, int_EST, int_NSCT, int_NST, int_TBBMT, int_TCST)
+slope = c(slope_BT, slope_CKMT, slope_CPT, slope_EST, slope_NSCT, slope_NST, slope_TBBMT, slope_TCST)
+
+sum_Tmmx =data.frame(EcoCode,intercept, slope)
+sum_Tmmx
+```
+
+#### Pulling out r-squared for each group
+reference: https://drsimonj.svbtle.com/running-a-model-on-separate-groups
+
+lm(formula = biomass_log ~ ndvi + res_meters + ndvi:res_meters, 
+    data = field_ndvi_long1
+```{r}
+season =  fire1 %>% 
+  nest(-EcoCode) %>% 
+  mutate(fit = map(data, ~ lm(log10SizeHa ~ season, data = .)),
+         results = map(fit, glance)) %>% 
+  unnest(results)%>%
+  mutate(variable="seasonLength") %>%
+  left_join(sum_Tmmx) %>%
+  dplyr::select(variable, EcoCode, intercept, slope, r.squared:nobs)
+
+season
+```
+
+```{r}
+write.csv(season, '../outputs/ClimateFireAnalysis/TableSeasonLengthAnalysis.csv',  row.names = FALSE)
+```
+
+```{r}
+fire1 %>% 
+  nest(-EcoCode) %>% 
+  mutate(fit = map(data, ~ lm(log10SizeHa ~ season, data = .)),
+         results = map(fit, glance)) %>% 
+  unnest(results) %>% 
+  ggplot(aes(x = factor(EcoCode), y = r.squared)) +
+    geom_bar(stat = "identity") +
+    labs(x = "Ecocode", y = expression(R^{2}))
+```
+
+
+### Combo Plot
+
+```{r}
+g4 = ggplot(data = fire1, aes(x = season, y = log10SizeHa, color = BTCodes)) + 
+  geom_smooth(method="lm", se=TRUE, alpha=0.1) +
+  geom_point(size = 1) +
+  scale_color_manual(values=cbbBTCodesPalette) +
+    labs(y=("Annual area burned\n(ha)"), x= "Season length (days)") +
+    reg_theme
+
+g4
+```
+
+
+
+## Snow Model
+```{r}
+fit5 = lm(log10SizeHa ~ MeanCalDoY + EcoCode + MeanCalDoY:EcoCode, data = snow1)
+```
+
+### Residuals
+
+
+```{r}
+# Get the fitted value for each observation
+snow$fit5 = fitted(fit5)
+```
+
+```{r}
+# Get the residuals of the model
+snow$res5 = residuals(fit5)
+```
+
+```{r}
+qplot(x = fit5, y = res5, data = snow,
+main = "Residuals vs Fitted Values")
+```
+
+```{r}
+qplot(x = MeanCalDoY, y = res5, data = snow,
+xlab = "CMD",
+ylab = "Residuals",
+main = "Residuals vs CMD")
+```
+```{r}
+qplot(x = factor(1), y = res5, data = snow, geom = "boxplot")
+```
+
+```{r}
+qqnorm(snow$res5, main = "Normal QQ Plot of Residuals")
+qqline(snow$res5) # add reference line to the qq plot
+```
+
+```{r}
+plot(fit5, which = 1) # residual vs fitted values
+```
+
+```{r}
+plot(fit5, which = 2) # qqnorm plot of residuals
+```
+
+### Summary
+```{r}
+summary(fit5)
+```
+```{r}
+summary(fit5)$r.squared 
+```
+```{r}
+int_BT = coef(fit5)[1]
+int_CKMT = coef(fit5)[1] + coef(fit5)[3]
+int_CPT = coef(fit5)[1] + coef(fit5)[4]
+int_EST = coef(fit5)[1] + coef(fit5)[5]
+int_NSCT = coef(fit5)[1] + coef(fit5)[6]
+int_NST = coef(fit5)[1] + coef(fit5)[7]
+int_TBBMT = coef(fit5)[1] + coef(fit5)[8]
+int_TCST = coef(fit5)[1] + coef(fit5)[9]
+
+slope_BT = coef(fit5)[2]
+slope_CKMT = coef(fit5)[2] + coef(fit5)[10]
+slope_CPT = coef(fit5)[2] + coef(fit5)[11]
+slope_EST = coef(fit5)[2] + coef(fit5)[12]
+slope_NSCT = coef(fit5)[2] + coef(fit5)[13]
+slope_NST = coef(fit5)[2] + coef(fit5)[14]
+slope_TBBMT = coef(fit5)[2] + coef(fit5)[15]
+slope_TCST = coef(fit5)[2] + coef(fit5)[16]
+
+```
+
+### Create Dataframe with summry output
+
+```{r}
+EcoCode = c("BT", "CKMT", "CPT", "EST", "NSCT", "NST", "TBBMT", "TCST")
+intercept = c(int_BT, int_CKMT, int_CPT, int_EST, int_NSCT, int_NST, int_TBBMT, int_TCST)
+slope = c(slope_BT, slope_CKMT, slope_CPT, slope_EST, slope_NSCT, slope_NST, slope_TBBMT, slope_TCST)
+
+sum_Tmmx =data.frame(EcoCode,intercept, slope)
+sum_Tmmx
+```
+
+### Pulling out r-squared for each group
+reference: https://drsimonj.svbtle.com/running-a-model-on-separate-groups
+
+lm(formula = biomass_log ~ ndvi + res_meters + ndvi:res_meters, 
+    data = field_ndvi_long1
+```{r}
+snow2 =  snow1 %>% 
+  nest(-EcoCode) %>% 
+  mutate(fit = map(data, ~ lm(log10SizeHa ~ MeanCalDoY, data = .)),
+         results = map(fit, glance)) %>% 
+  unnest(results) %>%
+  mutate(variable="SnowOff") %>%
+  left_join(sum_Tmmx) %>%
+  dplyr::select(variable, EcoCode, intercept, slope, r.squared:nobs)
+
+snow2
+```
+
+```{r}
+write.csv(snow2, '../outputs/ClimateFireAnalysis/TableSnowOffAnalysis.csv',  row.names = FALSE)
+```
+
+```{r}
+snow1 %>% 
+  nest(-EcoCode) %>% 
+  mutate(fit = map(data, ~ lm(log10SizeHa ~ MeanCalDoY, data = .)),
+         results = map(fit, glance)) %>% 
+  unnest(results) %>% 
+  ggplot(aes(x = factor(EcoCode), y = r.squared)) +
+    geom_bar(stat = "identity") +
+    labs(x = "snow Moisture Deficit", y = expression(R^{2}))
+```
+
+
+### Combo Plot
+```{r}
+g5 = ggplot(data = snow1, aes(x = MeanCalDoY, y = log10SizeHa, color = BTCodes)) + 
+  geom_smooth(method="lm", se=TRUE, alpha=0.1) +
+  geom_point(size = 1) +
+  scale_color_manual(values=cbbBTCodesPalette) +
+    labs(y=("Annual area burned\n(ha)"), x= "Snowmelt (Julian date)") +
+  reg_theme
+
+g5
+```
+
+# Save Summary Tables
+
+```{r}
+summer_climate = bind_rows(climate2, climate3, climate4)
 ```
 
 
 ```{r eval=FALSE, include=FALSE}
-write.csv(summer_climate, '../outputs/4.4ClimateFireAnalysis/TableSummerAnalysis.csv',  row.names = FALSE)
+write.csv(summer_climate, '../outputs/ClimateFireAnalysis/TableSummerAnalysis.csv',  row.names = FALSE)
 ```
 
-
-#  Combine tiny plots
+# Manuscript Figures 
+```{r}
+legend1 <- get_legend(legend_bt) 
+```
 
 ```{r fig.height=7, fig.width=6}
-comboplot1 = cowplot::plot_grid(plot_fit1, plot_fit2, plot_fit3, ncol=1, rel_heights = c(1, 1, 1), align = "hv", labels = c('(a)', '(b)', '(c)'), label_size = 12, label_fontface = "plain") 
+fig1 = cowplot::plot_grid(g1, g2, g3, g4, g5, legend1, ncol=2,  align = "hv") 
    
-
-comboplot1
+fig1
 ```
 
-
-
-
-```{r eval=FALSE, include=FALSE}
-ggsave("../figures/Analysis/SummerClimateTrends.png", plot = comboplot1, width = 6, height = 7, units = c("in"), dpi=600 )
-```
-
-#  Combine combo plots
 
 ```{r fig.height=7, fig.width=6}
-comboplot2 = cowplot::plot_grid(g1, g2, g3, ncol=2,  align = "hv", labels = c('(a)', '(b)', '(c)'), label_size = 12, label_fontface = "plain") 
-   
+fig1.1 = fig1  +
+  draw_label("(a)", x = 0.05, y = .99, fontfamily = "sans", fontface = "plain", color = "black", size = 12) +
+   draw_label("(b)", x = 0.55, y = .99, fontfamily = "sans", fontface = "plain", color = "black", size = 12) +
+  draw_label("(c)", x = 0.05, y = .67, fontfamily = "sans", fontface = "plain", color = "black", size = 12) +
+  draw_label("(d)", x = 0.55, y = .67, fontfamily = "sans", fontface = "plain", color = "black", size = 12) +
+  draw_label("(e)", x = 0.05, y = .37, fontfamily = "sans", fontface = "plain", color = "black", size = 12) 
 
-comboplot2
+
+fig1.1
 ```
-
-
-
 
 ```{r eval=FALSE, include=FALSE}
-ggsave("../figures/Analysis/SummerClimateTrends.png", plot = comboplot1, width = 6, height = 7, units = c("in"), dpi=600 )
+ggsave("../figures/ClimateAnalysis.png", plot = fig1.1, width = 6, height = 7, units = c("in"), dpi=600 )
 ```
+
 **THE END**
