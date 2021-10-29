@@ -272,7 +272,7 @@ g1 = ggplot(data = climate1, aes(x = SummerDef, y = log10SizeHa, color = BTCodes
   geom_smooth(method="lm", se=TRUE, alpha=0.1) +
   geom_point(size = 1) +
   scale_color_manual(values=cbbBTCodesPalette) +
-    labs(y=("Annual Area burned\n(ha)"), x= "Summer Moisture Deficit", color = "EcoCode") +
+    labs(y=("Annual Area burned\n(ha)"), x= "Summer Moisture Deficit (mm)", color = "EcoCode") +
   reg_theme
 
 g1
