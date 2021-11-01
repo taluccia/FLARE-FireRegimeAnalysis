@@ -1,0 +1,183 @@
+---
+title: "Cumulative area burned"
+author: "Anna Talucci"
+date: "10/31/2021"
+output: html_document
+---
+
+# Overview
+
+
+# Packages
+
+
+```{r include=FALSE}
+library(sp)
+library(sf)
+library(rgdal) # geospatial data
+library(raster)
+library(rgeos) # GIS Geometry
+library(foreign) # deals with dbf files
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(cowplot)
+library(RColorBrewer)
+library(scales)
+```
+
+# Define graph Theme and color Palette 
+
+##Themes
+```{r}
+
+reg_theme = theme_bw() + 
+  theme(plot.margin = unit(c(t = 0.3, r = 0.3, b = 0.3, l = 0.1), "cm")) +
+  theme(axis.title.x = element_text(size = 11, hjust = 0.5, vjust = -0.1),
+        axis.title.y = element_text(size = 11, hjust = 0.5, vjust = 1.1),
+        axis.text.x = element_text(size = 10, color = "black"),
+        axis.text.y = element_text(size = 10, color = "black"),
+        panel.background = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+```
+
+## Palettes
+
+
+```{r}
+cbbBTCodesPalette <- c("#009E73", "#0072B2", "#000000", "#E69F00", "#56B4E9", "#F0E442", "#CC79A7", "#D55E00")
+```
+
+4. EST = B1 = "#009E73",
+6. NST = B2 = "#0072B2"
+1. BT = T1 = "#000000"
+2. CKMT = T2 = "#E69F00"
+3. CPT = T3 = "#56B4E9"
+5. NSCT = T4 = "#F0E442"
+8. TCST = T5 = "#CC79A7"
+7. TBBMT = T6 = "#D55E00"
+
+
+```{r}
+arctic_palette2 = c('#E1BE6A','#40B0A6')
+```
+"#66A61E" "#E6AB02" "#A6761D"
+```{r}
+boreal_palette = c("#006CD1", "#994F00")
+```
+
+# Data 
+
+```{r}
+data = read.csv("../data/1.0-DataPrep/SiberiaFires2001-2020.csv") 
+```
+
+```{r}
+data
+```
+## Adjust data
+Convert class to factor
+```{r}
+data = data %>% 
+  mutate_at(vars(Class), list(factor)) %>% 
+  mutate_at(vars(EcoBiom), list(factor)) %>%
+  mutate(BTCodes = ifelse(EcoCode =="EST", "B1",
+                  ifelse(EcoCode =="NST", "B2",
+                   ifelse(EcoCode =="BT", "T1",
+                       ifelse(EcoCode =="CPT", "T2",
+                         ifelse(EcoCode =="CKMT", "T3",
+                            ifelse(EcoCode =="NSCT", "T4",
+                              ifelse(EcoCode =="TCST", "T5", "T6"))))))))
+
+```
+
+```{r}
+unique(data$EcoBiom)
+```
+```{r}
+class(data$Class)
+levels(data$Class)
+```
+
+```{r}
+class(data$EcoBiom)
+levels(data$EcoBiom)
+```
+
+```{r}
+head(data)
+```
+
+
+```{r}
+data %>% group_by(FireYr, EcoCode, BTCodes) %>%
+  summarise(TotHa = sum(SizeHa))%>% as.data.frame(.) %>%
+  replace(is.na(.), 0) 
+```
+
+# Calculate Cumulative Area
+```{r}
+data1 = data %>% group_by(FireYr, EcoCode, BTCodes) %>%
+  summarise(TotHa = sum(SizeHa))%>% as.data.frame(.) %>%
+  replace(is.na(.), 0) %>%
+  arrange(BTCodes, FireYr) %>%  # Arrange by year so adding works
+  group_by(BTCodes) %>%
+  mutate(aggcount = cumsum(TotHa))
+
+data1
+
+```
+
+
+# Graph
+```{r fig.height=3, fig.width=3.5}
+g1 = data1 %>%
+  ggplot(aes(x = FireYr, y = aggcount, color = BTCodes)) +
+  geom_line(size=1) + 
+   scale_color_manual(values = cbbBTCodesPalette) +
+  scale_y_continuous(trans='log10', labels = comma, name="Cumulative area burned (ha)") +
+  xlab("Fire year") +
+  reg_theme +
+  theme(legend.position = c(x=.55, y=.1), 
+        legend.key.height = unit(.1, 'in'), 
+        legend.key.width = unit(.1, 'in'),
+        legend.background = element_rect(fill=alpha('white', 0.0)),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 8)) + 
+  guides(color = guide_legend(nrow=2))  
+
+
+   
+         
+g1
+
+```
+
+```{r eval=FALSE, include=FALSE}
+ggsave("../figures/CumulativeAreaBurned.png", plot = g1, width = 3.5, height = 3, units = c("in"), dpi = 600)
+```
+
+
+```{r fig.height=3, fig.width=3}
+data1 %>%
+  ggplot(aes(x = FireYr, y = aggcount, color = BTCodes)) +
+  geom_line(size=1) + 
+   scale_color_manual(values = cbbBTCodesPalette) +
+  scale_y_continuous(name="Cumulative area burned") +
+  xlab("Fire year") +
+  reg_theme +
+  theme(legend.position = c(x=.55, y=.1), 
+        legend.key.height = unit(.1, 'in'), 
+        legend.key.width = unit(.1, 'in'),
+        legend.background = element_rect(fill=alpha('white', 0.0)),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 8)) + 
+  guides(color = guide_legend(nrow=2))  
+
+
+   
+         
+
+
+```
