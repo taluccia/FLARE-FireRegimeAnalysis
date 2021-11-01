@@ -169,6 +169,11 @@ Table1 = data %>% group_by(FireYr, EcoName) %>%
 Table1
 ```
 
+```{r}
+data %>% group_by(FireYr, EcoName) %>%
+  summarise(TotHa = sum(SizeHa))%>% as.data.frame(.) %>%
+  summarise(total=sum(TotHa))
+```
 
 ```{r}
 table1.1 = data %>% 
@@ -187,7 +192,11 @@ table1.1
 By ecozone:Average HA/yr, Sd ha/yr, percent burned per year,  Fire return interval
 ```{r}
 Table2 = data %>% group_by(EcoName) %>%
-  summarise(avgHa = mean(round(SizeHa, 1)), SD = sd(round(SizeHa, 1)), maxHa = max(SizeHa)) %>% 
+  summarise(avgHa = mean(round(SizeHa, 1)), 
+            SD = sd(round(SizeHa, 1)),
+            n = n(),
+            se = SD / sqrt(n), 
+            maxHa = max(SizeHa)) %>% 
   as.data.frame(.) %>%
   replace(is.na(.), 0) %>%
    write.csv(., '../outputs/1.1-Summary/Table2.csv',  row.names = FALSE)
@@ -302,7 +311,10 @@ data %>% dplyr::select(EcoName, Ecokm2) %>%
 ```{r}
 table8 = data %>% group_by(EcoName, FireYr) %>%
   summarise(totHa = sum(SizeHa)) %>%
-  summarise(avg = mean(totHa), SD = sd(totHa)) %>%
+  summarise(avg = mean(totHa), 
+            SD = sd(totHa), 
+            n = n(),
+            se = SD / sqrt(n), ) %>%
   as.data.frame(.) %>%
    write.csv(., '../outputs/1.1-Summary/Table8.csv',  row.names = FALSE)
    
@@ -444,6 +456,12 @@ data %>%
   write.csv(., '../outputs/1.1-Summary/Table12.csv',  row.names = FALSE)
 ```
 
+```{r}
+data %>% 
+  dplyr::select(FireYr, SizeKm2, EcoName, EcoCode, Ecokm2) %>%
+  count(FireYr, name='count') %>%
+  summarise(total = sum(count))
+```
 ## Table 13 Density
 number of fires/ area
 ```{r}
@@ -865,6 +883,16 @@ data7 = data %>%
 data7
 ```
 
+```{r}
+data %>% 
+  dplyr::select(FireYr, SizeKm2, EcoName, EcoCode, Ecokm2) %>%
+  group_by(FireYr, EcoName, EcoCode) %>%
+  count(FireYr, name='count') %>%
+  filter(EcoCode %in% c("CKMT", "NST")) %>%
+  filter(FireYr %in% c(2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019)) %>%
+  ungroup() %>%
+  summarise(total = sum(count))
+```
 
 ```{r fig.height=6, fig.width=6}
 fig7 = ggplot(data7, aes(x=FireYr, y=count)) +
