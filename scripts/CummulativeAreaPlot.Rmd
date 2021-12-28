@@ -116,7 +116,7 @@ data %>% group_by(FireYr, EcoCode, BTCodes) %>%
   replace(is.na(.), 0) 
 ```
 
-# Calculate Cumulative Area
+# Calculate Cumulative Area by ecozone
 ```{r}
 data1 = data %>% group_by(FireYr, EcoCode, BTCodes) %>%
   summarise(TotHa = sum(SizeHa))%>% as.data.frame(.) %>%
@@ -129,6 +129,18 @@ data1
 
 ```
 
+# Calculate Cumulative Area by Arctic/Sub
+```{r}
+data2 = data %>% group_by(FireYr, ArcSub) %>%
+  summarise(TotHa = sum(SizeHa))%>% as.data.frame(.) %>%
+  replace(is.na(.), 0) %>%
+  arrange(ArcSub, FireYr) %>%  # Arrange by year so adding works
+  group_by(ArcSub) %>%
+  mutate(aggcount = cumsum(TotHa))
+
+data2
+
+```
 
 # Graph
 ```{r fig.height=3, fig.width=3.5}
@@ -156,6 +168,48 @@ g1
 
 ```{r eval=FALSE, include=FALSE}
 ggsave("../figures/CumulativeAreaBurned.png", plot = g1, width = 3.5, height = 3, units = c("in"), dpi = 600)
+```
+
+
+```{r fig.height=3, fig.width=3}
+g2 = data2 %>%
+  ggplot(aes(x = FireYr, y = aggcount, color = ArcSub)) +
+  geom_line(size=1) + 
+   scale_color_manual(values = arctic_palette2, labels = c("Arctic", "Subarctic")) +
+  scale_y_continuous(trans='log10', labels = comma, name="Cumulative area burned (ha)") +
+  xlab("Fire year") +
+  reg_theme +
+  theme(legend.position = c(x=.55, y=.1), 
+        legend.key.height = unit(.1, 'in'), 
+        legend.key.width = unit(.1, 'in'),
+        legend.background = element_rect(fill=alpha('white', 0.0)),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 8)) + 
+  guides(color = guide_legend(nrow=2))  
+
+
+   
+         
+g2
+
+```
+
+```{r eval=FALSE, include=FALSE}
+ggsave("../figures/CumulativeAreaBurnedArctic.png", plot = g2, width = 3, height = 3, units = c("in"), dpi = 600)
+```
+
+# Combined plots
+```{r fig.height=3, fig.width=6}
+
+fig1 = cowplot::plot_grid(g1, g2, ncol=2) +
+    draw_label("(a)", x = .02, y = .97, size = 10) +
+   draw_label("(b)", x = .52, y = .97, size = 10) 
+
+fig1
+```
+
+```{r eval=FALSE, include=FALSE}
+ggsave("../figures/CumulativeAreaCombined.png", plot = fig1, width = 6, height = 3, units = c("in"), dpi = 600)
 ```
 
 
